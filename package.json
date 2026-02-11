@@ -1,0 +1,19 @@
+{
+  "name": "castellan",
+  "version": "0.1.0",
+  "description": "Castellan is a tool for managing streams and viewers",
+  "private": true,
+  "scripts": {
+    "dev:server": "pnpm --filter @castellan/server dev",
+    "dev:overlays": "pnpm --filter @castellan/overlays dev",
+    "dev": "pnpm --parallel --filter @castellan/server --filter @castellan/overlays dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Kavaliero",
+  "license": "ISC",
+  "packageManager": "pnpm@10.29.1",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

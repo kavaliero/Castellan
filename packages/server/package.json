@@ -1,0 +1,28 @@
+{
+  "name": "@castellan/server",
+  "version": "0.1.0",
+  "description": "Server for Castellan",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Kavaliero",
+  "license": "ISC",
+  "packageManager": "pnpm@10.29.1",
+  "dependencies": {
+    "@castellan/shared": "workspace:*",
+    "@prisma/client": "^6.19.2",
+    "@streamerbot/client": "^1.12.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/ws": "^8.18.1",
+    "prisma": "^6.19.2",
+    "tsx": "^4.21.0"
+  }
+}

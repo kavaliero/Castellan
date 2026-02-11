@@ -1,0 +1,11 @@
+/* Reset global — fond transparent pour OBS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: transparent;
+  overflow: hidden;
+}

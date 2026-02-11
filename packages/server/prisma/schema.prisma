@@ -1,0 +1,106 @@
+// Configuration Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url = env("DATABASE_URL")
+}
+
+
+// ============================================
+// MODÈLES - Ce que la BDD stocke réellement
+// ============================================
+
+/// Un viewer Twitch. Créé la première fois qu'on le voit,
+/// enrichi au fil des streams.
+model Viewer {
+  id                     String          @id @default(cuid())
+  twitchId               String          @unique
+  username               String
+  displayName            String
+  totalMessages          Int             @default(0)
+  totalWatchTime         Int             @default(0)    // en minutes
+  totalBitsDonated       Int             @default(0)
+  totalChannelPointsUsed Int             @default(0)
+  isFollower             Boolean         @default(false)
+  isSubscriber           Boolean         @default(false)
+  firstSeenAt            DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  // Relations — un viewer a plusieurs sessions, messages, etc.
+  sessions     ViewerSession[]
+  chatMessages ChatMessage[]
+  events       StreamEvent[]
+}
+
+/// Une session de stream (du début à la fin).
+/// Sert à regrouper tous les events d'un même stream.
+model Stream {
+  id        String          @id @default(cuid())
+  title     String?          // Titre actuel (dernier connu)
+  game      String?           // Jeu actuel
+  titleHistory String?        // JSON: ["titre1", "titre2", ...]
+  gameHistory  String?        // JSON: ["jeu1", "jeu2", ...]
+  startedAt DateTime        @default(now())
+  endedAt   DateTime?
+
+  // Relations
+  sessions ViewerSession[]
+  messages ChatMessage[]
+  events   StreamEvent[]
+}
+
+/// La présence d'un viewer pendant un stream spécifique.
+/// join = joinedAt, leave = leftAt.
+/// Permet de calculer le watch time par stream.
+model ViewerSession {
+  id             String    @id @default(cuid())
+  viewerId       String
+  streamId       String
+  joinedAt       DateTime  @default(now())
+  lastActiveAt   DateTime  @default(now())  // ← NOUVEAU : dernière activité détectée
+  leftAt         DateTime?
+  messageCount   Int       @default(0)
+  watchTime      Int       @default(0)      // ← NOUVEAU : minutes accumulées par heartbeat
+  isActive       Boolean   @default(true)   // ← NOUVEAU : encore présent ?
+
+  viewer Viewer @relation(fields: [viewerId], references: [id])
+  stream Stream @relation(fields: [streamId], references: [id])
+
+  @@unique([viewerId, streamId])
+}
+
+/// Chaque message de chat est stocké individuellement.
+/// Pourquoi ? Pour les crédits (top chatters), l'historique,
+/// et plus tard l'analyse de sentiment / nuage de mots.
+model ChatMessage {
+  id        String   @id @default(cuid())
+  viewerId  String
+  streamId  String
+  content   String
+  emotes    String?  // JSON stringifié (SQLite n'a pas de type JSON natif)
+  timestamp DateTime @default(now())
+
+  viewer Viewer @relation(fields: [viewerId], references: [id])
+  stream Stream @relation(fields: [streamId], references: [id])
+}
+
+/// Event générique : follow, sub, raid, bits, dice, channel_point_redemption.
+/// On utilise un modèle unique avec un champ `type` plutôt qu'une table par event,
+/// parce qu'ils ont tous la même structure de base (viewer + data optionnelle).
+model StreamEvent {
+  id        String   @id @default(cuid())
+  streamId  String
+  viewerId  String?  // Nullable car les raids n'ont pas forcément un viewer connu en BDD
+  type      String   // "follow", "sub", "raid", "bits", "dice", "channel_point_redemption"
+  data      String?  // JSON stringifié avec les données spécifiques
+  timestamp DateTime @default(now())
+
+  stream Stream  @relation(fields: [streamId], references: [id])
+  viewer Viewer? @relation(fields: [viewerId], references: [id])
+
+  // Index pour requêter rapidement par stream + type
+  @@index([streamId, type])
+}

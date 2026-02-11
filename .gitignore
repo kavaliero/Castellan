@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Database (SQLite)
+*.db
+*.db-journal
+
+# Prisma
+packages/server/prisma/migrations/dev.db
+
+# Vite cache
+.vite/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+debug-events.log
+
+# Claude / AI
+.claude/
+
+# Docs (notes internes)
+docs/
+
+# Test scripts
+test-*.ps1

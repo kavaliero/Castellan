@@ -1,0 +1,14 @@
+{
+  "name": "@castellan/shared",
+  "version": "0.1.0",
+  "description": "Shared utilities for Castellan",
+  "main": "src/index.ts",
+  "type": "src/intex.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Kavaliero",
+  "license": "ISC",
+  "packageManager": "pnpm@10.29.1"
+}

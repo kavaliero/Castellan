@@ -1,0 +1,64 @@
+/* ═══════════════════════════════════════════════════════════════
+   GUILD PANEL — Keyframe animations
+   Les styles sont en inline dans GuildPanel.tsx (fidele au ref v3)
+   Ici on ne met que les @keyframes et les @import
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
+
+/* Animation d'apparition des noms graves */
+@keyframes engraveIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+    letter-spacing: 3px;
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    letter-spacing: 1px;
+  }
+}
+
+/* Shimmer glissant sur les barres HP/Mana */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Pulse rouge quand HP critique (< 25%) */
+@keyframes hpCritical {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4),
+      0 0 12px rgba(232, 84, 84, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(232, 84, 84, 0.7),
+      0 0 30px rgba(232, 84, 84, 0.3);
+  }
+}
+
+/* Animation de changement de valeur */
+@keyframes valueChange {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,297 @@
+/* ============================================
+   CASTELLAN CRÉDITS — THÈME MÉDIÉVAL PARCHEMIN
+   ============================================ */
+
+   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
+
+   /* --- Container principal --- */
+   .credits-container {
+     position: relative;
+     width: 100%;
+     height: 100vh;
+     overflow: hidden;
+     border-radius: 8px;
+     background:
+       radial-gradient(ellipse at 50% 30%, rgba(101, 78, 50, 0.35) 0%, transparent 60%),
+       radial-gradient(ellipse at 50% 70%, rgba(80, 60, 35, 0.25) 0%, transparent 60%),
+       linear-gradient(180deg, #1E150D 0%, #15100A 100%);
+   }
+   
+   /* Cadre intérieur subtil */
+   .credits-frame {
+     position: absolute;
+     inset: 0;
+     border-radius: 8px;
+     border: 2px solid rgba(139, 105, 20, 0.4);
+     box-shadow:
+       inset 0 0 20px rgba(62, 39, 15, 0.6),
+       inset 0 0 3px rgba(212, 168, 67, 0.15);
+     pointer-events: none;
+     z-index: 6;
+   }
+   
+   /* Fondu haut */
+   .credits-fade-top {
+     position: absolute;
+     top: 0;
+     left: 0;
+     right: 0;
+     height: 80px;
+     background: linear-gradient(to bottom, #1E150D, transparent);
+     z-index: 5;
+     pointer-events: none;
+   }
+   
+   /* Fondu bas */
+   .credits-fade-bottom {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     height: 80px;
+     background: linear-gradient(to top, #1E150D, transparent);
+     z-index: 5;
+     pointer-events: none;
+   }
+   
+   /* Canvas particules */
+   .credits-particles {
+     position: absolute;
+     inset: 0;
+     pointer-events: none;
+     z-index: 2;
+   }
+   
+   /* --- Contenu scrollable --- */
+   .credits-scroll {
+     position: absolute;
+     left: 0;
+     right: 0;
+     z-index: 3;
+     padding: 0 40px;
+   }
+   
+   /* --- Grand titre --- */
+   .credits-title {
+     font-family: 'MedievalSharp', cursive;
+     font-size: 42px;
+     color: #D4A843;
+     text-align: center;
+     letter-spacing: 3px;
+     line-height: 1.2;
+     animation: glowPulse 3s ease-in-out infinite;
+   }
+   
+   .credits-subtitle {
+     font-family: 'Cinzel', serif;
+     font-size: 18px;
+     color: rgba(212, 168, 67, 0.6);
+     text-align: center;
+     margin-top: 8px;
+   }
+   
+   .credits-duration {
+     font-family: 'IM Fell English', serif;
+     font-size: 15px;
+     color: #8a7a66;
+     text-align: center;
+     margin-top: 4px;
+     font-style: italic;
+   }
+   
+   /* --- Titres de section --- */
+   .credits-section-title {
+     font-family: 'MedievalSharp', cursive;
+     font-size: 28px;
+     color: #D4A843;
+     text-align: center;
+     margin-bottom: 16px;
+     text-shadow: 0 2px 8px rgba(180, 140, 60, 0.4), 0 0 30px rgba(180, 140, 60, 0.15);
+     letter-spacing: 2px;
+   }
+   
+   .credits-section-emoji {
+     margin-right: 10px;
+   }
+   
+   /* --- Séparateur ornamental --- */
+   .credits-divider {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     gap: 12px;
+     margin: 30px auto;
+     width: 60%;
+     opacity: 0.5;
+   }
+   
+   .credits-divider-line {
+     flex: 1;
+     height: 1px;
+   }
+   
+   .credits-divider-line--left {
+     background: linear-gradient(to right, transparent, #D4A843);
+   }
+   
+   .credits-divider-line--right {
+     background: linear-gradient(to left, transparent, #D4A843);
+   }
+   
+   .credits-divider-symbol {
+     color: #D4A843;
+     font-size: 14px;
+   }
+   
+   /* --- Entrée nom --- */
+   .credits-name-entry {
+     text-align: center;
+     margin: 8px 0;
+     opacity: 0;
+     transform: translateY(15px);
+     transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+   }
+   
+   .credits-name-entry--visible {
+     opacity: 1;
+     transform: translateY(0);
+   }
+   
+   .credits-name {
+     font-family: 'Cinzel', serif;
+     font-size: 20px;
+     color: #E8DCC8;
+     font-weight: 700;
+   }
+   
+   .credits-name-detail {
+     font-family: 'IM Fell English', serif;
+     font-size: 15px;
+     color: rgba(212, 168, 67, 0.7);
+     margin-left: 10px;
+     font-style: italic;
+   }
+   
+   /* --- Ligne de stat --- */
+   .credits-stat {
+     font-family: 'IM Fell English', serif;
+     font-size: 17px;
+     color: #C4B59A;
+     text-align: center;
+     margin: 6px 0;
+     letter-spacing: 0.5px;
+   }
+   
+   .credits-stat-icon {
+     margin-right: 8px;
+   }
+   
+   /* --- Message de fin --- */
+   .credits-closing {
+     text-align: center;
+     margin: 40px 0 60px;
+   }
+   
+   .credits-closing-title {
+     font-family: 'MedievalSharp', cursive;
+     font-size: 24px;
+     color: #D4A843;
+     margin-bottom: 12px;
+     animation: glowPulse 3s ease-in-out infinite;
+   }
+   
+   .credits-closing-subtitle {
+     font-family: 'IM Fell English', serif;
+     font-size: 15px;
+     color: #8a7a66;
+     font-style: italic;
+     line-height: 1.6;
+   }
+   
+   .credits-closing-studio {
+     color: rgba(212, 168, 67, 0.5);
+   }
+   
+   /* --- Scroll caché après défilement --- */
+   .credits-scroll--hidden {
+     opacity: 0;
+     pointer-events: none;
+   }
+
+   /* --- Promo finale (fixe, centré) --- */
+   .credits-promo {
+     position: absolute;
+     inset: 0;
+     z-index: 4;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     gap: 16px;
+     padding: 40px;
+     opacity: 0;
+     transition: opacity 1.5s ease-in;
+     pointer-events: none;
+   }
+
+   .credits-promo--visible {
+     opacity: 1;
+     pointer-events: auto;
+   }
+
+   .credits-promo-text {
+     font-family: 'MedievalSharp', cursive;
+     font-size: 36px;
+     color: #D4A843;
+     text-align: center;
+     letter-spacing: 2px;
+     animation: glowPulse 3s ease-in-out infinite;
+   }
+
+   .credits-promo-subtitle {
+     font-family: 'IM Fell English', serif;
+     font-size: 18px;
+     color: #C4B59A;
+     text-align: center;
+     font-style: italic;
+   }
+
+   .credits-promo-link {
+     font-family: 'Cinzel', serif;
+     font-size: 20px;
+     color: #D4A843;
+     text-decoration: none;
+     padding: 8px 20px;
+     border: 1px solid rgba(212, 168, 67, 0.4);
+     border-radius: 6px;
+     transition: all 0.3s ease;
+     background: rgba(62, 39, 15, 0.3);
+   }
+
+   .credits-promo-link:hover {
+     background: rgba(62, 39, 15, 0.6);
+     border-color: rgba(212, 168, 67, 0.7);
+     text-shadow: 0 0 12px rgba(212, 168, 67, 0.5);
+   }
+
+   .credits-promo-widget {
+     margin-top: 12px;
+     border-radius: 6px;
+     overflow: hidden;
+     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+   }
+
+   .credits-promo-widget iframe {
+     display: block;
+     max-width: 100%;
+   }
+
+   /* --- Animations --- */
+   @keyframes glowPulse {
+     0%, 100% {
+       text-shadow: 0 2px 8px rgba(180, 140, 60, 0.4), 0 0 30px rgba(180, 140, 60, 0.15);
+     }
+     50% {
+       text-shadow: 0 2px 12px rgba(180, 140, 60, 0.6), 0 0 40px rgba(180, 140, 60, 0.25);
+     }
+   }

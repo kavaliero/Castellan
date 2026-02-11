@@ -1,0 +1,12 @@
+{
+  "followers": {
+    "current": 0,
+    "target": 1000
+  },
+  "subscribers": {
+    "current": 0,
+    "target": 50
+  },
+  "lastFollow": null,
+  "lastSub": null
+}

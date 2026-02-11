@@ -1,0 +1,77 @@
+.alerts-page {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+  }
+  
+  .alert-popup {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 16px;
+    padding: 16px 24px;
+    min-width: 300px;
+    border-left: 4px solid #b388ff;
+  
+    /* Animation entrée + sortie */
+    animation:
+      alert-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      alert-exit 0.5s ease-in 4.5s forwards;
+  }
+  
+  /* Couleur de bordure selon le type */
+  .alert-follow { border-left-color: #ff6b6b; }
+  .alert-sub    { border-left-color: #ffd700; }
+  .alert-raid   { border-left-color: #7c4dff; }
+  .alert-bits   { border-left-color: #00e5ff; }
+  .alert-dice   { border-left-color: #69f0ae; }
+  
+  @keyframes alert-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-30px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes alert-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+    }
+  }
+  
+  .alert-icon {
+    font-size: 36px;
+    /* Petit bounce sur l'icône */
+    animation: icon-bounce 0.6s ease-out 0.3s;
+  }
+  
+  @keyframes icon-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+  
+  .alert-title {
+    color: #ffffff;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  
+  .alert-message {
+    color: #b0b0b0;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 14px;
+    margin-top: 2px;
+  }
