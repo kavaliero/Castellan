@@ -41,5 +41,8 @@ debug-events.log
 # Docs (notes internes)
 docs/
 
+# Clips téléchargés (générés par StreamerBot)
+packages/overlays/public/clips/*.mp4
+
 # Test scripts
 test-*.ps1

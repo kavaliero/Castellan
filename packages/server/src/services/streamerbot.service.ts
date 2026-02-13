@@ -3,7 +3,7 @@ import { writeFileSync, appendFileSync } from "fs";
 import { prisma } from "../db/client";
 import { broadcast } from "../ws/broadcaster";
 import { findOrCreateViewer, findOrCreateSession } from "./viewer.service";
-import { updateFollowerCount, updateSubscriberCount, setLastFollow, setLastSub, getFollowersTarget, getSubscribersTarget } from "./goals.service";
+import { incrementFollowerCount, incrementSubscriberCount, setLastFollow, setLastSub, getFollowersTarget, getSubscribersTarget, updateGoalsConfig } from "./goals.service";
 
 /**
  * Service StreamerBot — se connecte au WebSocket Server de StreamerBot
@@ -122,13 +122,12 @@ async function handleFollow(viewer: ViewerInfo) {
             payload: { viewer },
         });
 
-        // Update goals service + broadcast
-        const followerCount = await prisma.viewer.count({ where: { isFollower: true } });
-        updateFollowerCount(followerCount);
+        // Incrémenter le compteur goals (+1) et broadcast
+        const newCount = incrementFollowerCount();
         setLastFollow(viewer.displayName);
         broadcast({
             type: "goal:update",
-            payload: { type: "followers", current: followerCount, target: getFollowersTarget() },
+            payload: { type: "followers", current: newCount, target: getFollowersTarget() },
         });
     } catch (err) {
         console.error("[StreamerBot] Erreur Follow:", err);
@@ -162,13 +161,12 @@ async function handleSub(viewer: ViewerInfo, tier: number, months: number) {
             payload: { viewer, tier, months },
         });
 
-        // Update goals service + broadcast
-        const subCount = await prisma.viewer.count({ where: { isSubscriber: true } });
-        updateSubscriberCount(subCount);
+        // Incrémenter le compteur goals (+1) et broadcast
+        const newCount = incrementSubscriberCount();
         setLastSub(viewer.displayName);
         broadcast({
             type: "goal:update",
-            payload: { type: "subscribers", current: subCount, target: getSubscribersTarget() },
+            payload: { type: "subscribers", current: newCount, target: getSubscribersTarget() },
         });
     } catch (err) {
         console.error("[StreamerBot] Erreur Sub:", err);
@@ -569,7 +567,7 @@ export async function connectToStreamerBot(options?: {
     });
 
     // ═══════════════════════════════════════════════════════════
-    // CUSTOM EVENTS (Stream Start/End)
+    // CUSTOM EVENTS (Stream Start/End/GoalsInit)
     // ═══════════════════════════════════════════════════════════
 
     client.on("Custom.Event", async ({ data }: { data: any }) => {
@@ -603,6 +601,51 @@ export async function connectToStreamerBot(options?: {
             } catch (err) {
                 console.error("[StreamerBot] Erreur StreamStart:", err);
             }
+        }
+
+        if (eventName === "CastellanGoalsInit") {
+            console.log(`[StreamerBot] 🎯 GoalsInit reçu:`, JSON.stringify(args));
+
+            // Helper : convertit en number ou retourne undefined si absent/invalide
+            const safeNum = (v: any): number | undefined => {
+                if (v == null) return undefined;
+                const n = Number(v);
+                return isNaN(n) ? undefined : n;
+            };
+
+            // Derniers follower/sub — set AVANT updateGoalsConfig pour que
+            // broadcastAllGoals() envoie les bons noms aux overlays
+            // latestFollower.user = display name ("Yurelias")
+            // latestFollower.userName = login ("yurelias")
+            const lastFollowName = args["latestFollower.user"]
+                ?? args["latestFollower.userName"]
+                ?? null;
+            // latestSubscriber n'a pas de .user, .userName = login
+            const lastSubName = args["latestSubscriber.userName"]
+                ?? args["latestSubscriber.userLogin"]
+                ?? null;
+
+            if (lastFollowName) setLastFollow(String(lastFollowName));
+            if (lastSubName) setLastSub(String(lastSubName));
+
+            // Compteurs actuels + targets
+            updateGoalsConfig({
+                followers: {
+                    current: safeNum(args.followerCount),
+                    target: safeNum(args.followersTarget),
+                },
+                subscribers: {
+                    current: safeNum(args.subscriberCount),
+                    target: safeNum(args.subscribersTarget),
+                },
+            });
+
+            console.log(
+                `[StreamerBot] 🎯 Goals initialisés — `
+                + `followers: ${args.followerCount ?? "?"}/${args.followersTarget ?? "?"}, `
+                + `subs: ${args.subscriberCount ?? "?"}/${args.subscribersTarget ?? "?"}, `
+                + `lastFollow: ${lastFollowName ?? "aucun"}, lastSub: ${lastSubName ?? "aucun"}`,
+            );
         }
 
         if (eventName === "CastellanStreamEnd") {

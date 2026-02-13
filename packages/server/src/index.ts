@@ -1,13 +1,16 @@
 import express from "express";
+import cors from "cors";
 import { initWebSocket, broadcast, getClientCount } from "./ws/broadcaster";
 import { connectToStreamerBot, getCurrentStreamId, setCurrentStreamId, getBroadcasterId, setBroadcasterId } from "./services/streamerbot.service";
 import { buildCredits } from "./services/credits.service";
 import { initGoals, getGoalsState, updateGoalsConfig, broadcastAllGoals } from "./services/goals.service";
+import { syncClips, getClips, getClipsCount, getClipsSyncedAt } from "./services/clips.service";
 import { prisma } from "./db/client";
 import { findOrCreateViewer, findOrCreateSession } from "./services/viewer.service";
-import type { IncomingEvent } from "@castellan/shared";
+import type { IncomingEvent, ClipsSyncPayload } from "@castellan/shared";
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // ===========================
@@ -82,6 +85,87 @@ app.post("/api/goals/config", (req, res) => {
   updateGoalsConfig({ followers, subscribers });
   console.log("[Goals] 🎯 Config mise à jour:", JSON.stringify(req.body));
   res.json({ ok: true, goals: getGoalsState() });
+});
+
+// ===========================
+// CLIPS (pour la scène pause)
+// StreamerBot récupère les clips via l'API Twitch
+// et les POST ici pour que l'overlay /pause les joue
+// ===========================
+
+/**
+ * POST /api/clips/sync — Reçoit les clips depuis StreamerBot
+ * 
+ * Body JSON:
+ * {
+ *   "clips": [
+ *     {
+ *       "id": "AwkwardHelplessSalamanderSwiftRage",
+ *       "url": "https://clips.twitch.tv/...",
+ *       "embedUrl": "https://clips.twitch.tv/embed?clip=...",
+ *       "creatorName": "Toto",
+ *       "title": "Moment épique",
+ *       "viewCount": 42,
+ *       "createdAt": "2026-01-15T20:00:00Z",
+ *       "thumbnailUrl": "https://clips-media-assets2.twitch.tv/...-preview-480x272.jpg",
+ *       "duration": 30,
+ *       "gameName": "Elden Ring"
+ *     }
+ *   ]
+ * }
+ * 
+ * Depuis StreamerBot : action C# qui fetch l'API Twitch /helix/clips
+ * puis POST le résultat ici.
+ */
+app.post("/api/clips/sync", (req, res) => {
+  try {
+    const body = req.body as ClipsSyncPayload;
+
+    if (!body.clips || !Array.isArray(body.clips)) {
+      res.status(400).json({ ok: false, error: "Le body doit contenir un tableau 'clips'" });
+      return;
+    }
+
+    const result = syncClips(body.clips);
+
+    // Notifier les overlays que les clips sont disponibles
+    broadcast({
+      type: "clips:synced",
+      payload: {
+        count: result.count,
+        syncedAt: result.syncedAt,
+      },
+    });
+
+    console.log(`[Clips] 🎬 ${result.count} clips reçus et synchronisés`);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error("[Clips] Erreur sync:", err);
+    res.status(500).json({ ok: false, error: "Erreur interne" });
+  }
+});
+
+/**
+ * GET /api/clips — Retourne les clips en ordre aléatoire
+ * 
+ * Query params optionnels :
+ * - limit : nombre max de clips (défaut : tous)
+ * 
+ * Chaque appel retourne un ordre différent (shuffle).
+ * L'overlay /pause appelle cet endpoint au mount.
+ */
+app.get("/api/clips", (_req, res) => {
+  const limit = _req.query.limit ? parseInt(_req.query.limit as string) : undefined;
+
+  const clips = getClips({ limit });
+
+  res.json({
+    ok: true,
+    count: clips.length,
+    total: getClipsCount(),
+    syncedAt: getClipsSyncedAt(),
+    clips,
+  });
 });
 
 // ===========================

@@ -1,12 +1,12 @@
 {
   "followers": {
-    "current": 0,
-    "target": 1000
+    "current": 333,
+    "target": 350
   },
   "subscribers": {
-    "current": 0,
+    "current": 5,
     "target": 50
   },
-  "lastFollow": null,
-  "lastSub": null
+  "lastFollow": "Yurelias",
+  "lastSub": "mdossan"
 }

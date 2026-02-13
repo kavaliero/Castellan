@@ -117,6 +117,9 @@ export interface IncomingEventData {
 } | {
     type: 'credits:data';
     payload: CreditsPayload;
+} | {
+    type: 'clips:synced';
+    payload: ClipsSyncedPayload;
 }
 
 export interface ChatMessagePayload {
@@ -172,6 +175,57 @@ export interface AlertChannelPointRedemptionPayload {
     viewer: ViewerInfo;
     rewardName: string;
     rewardCost: number;
+}
+
+// ============================================
+// CLIPS — Données des clips Twitch pour la scène pause
+// ============================================
+
+/**
+ * Un clip Twitch tel que retourné par l'API Helix.
+ * StreamerBot récupère les clips et les POST au server.
+ * Le server les stocke en cache et les sert à l'overlay /pause.
+ */
+export interface TwitchClip {
+    /** ID unique du clip (ex: "AwkwardHelplessSalamanderSwiftRage") */
+    id: string;
+    /** URL de la page du clip sur Twitch */
+    url: string;
+    /** URL d'embed pour iframe */
+    embedUrl: string;
+    /** Nom du créateur du clip */
+    creatorName: string;
+    /** Titre du clip */
+    title: string;
+    /** Nombre de vues */
+    viewCount: number;
+    /** Date de création ISO */
+    createdAt: string;
+    /** URL de la thumbnail */
+    thumbnailUrl: string;
+    /** Durée du clip en secondes */
+    duration: number;
+    /** Nom du jeu/catégorie (optionnel) */
+    gameName?: string;
+    /** URL locale du fichier vidéo (ex: "/clips/MonClip.mp4"), set par StreamerBot après download */
+    videoUrl?: string;
+}
+
+/**
+ * Ce que StreamerBot POST sur /api/clips/sync.
+ * Contient la liste brute des clips récupérés depuis l'API Twitch.
+ */
+export interface ClipsSyncPayload {
+    clips: TwitchClip[];
+}
+
+/**
+ * Notification WS envoyée aux overlays quand les clips sont synchronisés.
+ * L'overlay /pause peut alors fetch GET /api/clips pour les récupérer.
+ */
+export interface ClipsSyncedPayload {
+    count: number;
+    syncedAt: string;
 }
 
 export interface CreditsPayload {

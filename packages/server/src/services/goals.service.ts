@@ -108,16 +108,18 @@ export function updateGoalsConfig(config: {
   broadcastAllGoals();
 }
 
-/** Met à jour le compteur followers (appelé par handleFollow) */
-export function updateFollowerCount(count: number): void {
-  state.followers.current = count;
+/** Incrémente le compteur followers de +1 (appelé par handleFollow) */
+export function incrementFollowerCount(): number {
+  state.followers.current += 1;
   saveConfig();
+  return state.followers.current;
 }
 
-/** Met à jour le compteur subscribers (appelé par handleSub) */
-export function updateSubscriberCount(count: number): void {
-  state.subscribers.current = count;
+/** Incrémente le compteur subscribers de +1 (appelé par handleSub) */
+export function incrementSubscriberCount(): number {
+  state.subscribers.current += 1;
   saveConfig();
+  return state.subscribers.current;
 }
 
 /** Met à jour le dernier follower */
