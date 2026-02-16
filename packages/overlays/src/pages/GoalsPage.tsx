@@ -27,6 +27,16 @@ export function GoalsPage() {
           }));
           break;
 
+        // Events dédiés goals (ne déclenchent PAS de popups dans AlertsPage)
+        case "goal:lastFollow":
+          setLastFollow(event.payload.displayName);
+          break;
+
+        case "goal:lastSub":
+          setLastSub(event.payload.displayName);
+          break;
+
+        // Les vrais events alert:* mettent aussi à jour le nom affiché
         case "alert:follow":
           setLastFollow(event.payload.viewer.displayName);
           break;
@@ -36,7 +46,6 @@ export function GoalsPage() {
           break;
 
         case "alert:gift_sub":
-          // Le gift sub compte aussi comme "dernier sub"
           setLastSub(event.payload.viewer.displayName);
           break;
       }

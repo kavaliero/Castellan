@@ -163,31 +163,18 @@ export function broadcastAllGoals(): void {
     },
   });
 
-  // Broadcast last follow/sub comme des alertes pour que l'overlay capte les noms
+  // Broadcast last follow/sub comme events goals dédiés
+  // (et non pas alert:follow/alert:sub, qui déclenchent des popups dans AlertsPage)
   if (state.lastFollow) {
     broadcast({
-      type: "alert:follow",
-      payload: {
-        viewer: {
-          twitchId: "",
-          username: state.lastFollow.toLowerCase(),
-          displayName: state.lastFollow,
-        },
-      },
+      type: "goal:lastFollow",
+      payload: { displayName: state.lastFollow },
     });
   }
   if (state.lastSub) {
     broadcast({
-      type: "alert:sub",
-      payload: {
-        viewer: {
-          twitchId: "",
-          username: state.lastSub.toLowerCase(),
-          displayName: state.lastSub,
-        },
-        tier: 1,
-        months: 0,
-      },
+      type: "goal:lastSub",
+      payload: { displayName: state.lastSub },
     });
   }
 }

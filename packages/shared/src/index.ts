@@ -100,6 +100,12 @@ export interface IncomingEventData {
     type: 'alert:sub';
     payload: AlertSubPayload
 } | {
+    type: 'goal:lastFollow';
+    payload: GoalLastFollowPayload;
+} | {
+    type: 'goal:lastSub';
+    payload: GoalLastSubPayload;
+} | {
     type: 'alert:gift_sub';
     payload: AlertGiftSubPayload
 } | {
@@ -120,6 +126,12 @@ export interface IncomingEventData {
 } | {
     type: 'clips:synced';
     payload: ClipsSyncedPayload;
+} | {
+    type: 'stream:info';
+    payload: StreamInfoPayload;
+} | {
+    type: 'stream:viewers';
+    payload: StreamViewersPayload;
 }
 
 export interface ChatMessagePayload {
@@ -134,6 +146,16 @@ export interface GoalPayload {
     type: "followers" | "subscribers";
     current: number;
     target: number;
+}
+
+/** Nom du dernier follower — envoyé pour mettre à jour l'affichage goals, PAS une alerte popup */
+export interface GoalLastFollowPayload {
+    displayName: string;
+}
+
+/** Nom du dernier sub — envoyé pour mettre à jour l'affichage goals, PAS une alerte popup */
+export interface GoalLastSubPayload {
+    displayName: string;
 }
 
 export interface AlertFollowPayload {
@@ -228,9 +250,24 @@ export interface ClipsSyncedPayload {
     syncedAt: string;
 }
 
+// ============================================
+// STREAM — Infos du stream en cours pour l'overlay frame
+// ============================================
+
+export interface StreamInfoPayload {
+    game: string;
+    title: string;
+    startedAt: string; // ISO date
+}
+
+export interface StreamViewersPayload {
+    count: number;
+}
+
 export interface CreditsPayload {
     stream: {
         title: string;
+        game: string;
         duration: number;
         startedAt: string;
     };

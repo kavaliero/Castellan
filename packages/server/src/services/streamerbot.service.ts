@@ -1,9 +1,12 @@
 import { StreamerbotClient } from "@streamerbot/client";
 import { writeFileSync, appendFileSync } from "fs";
+
+const DEBUG_EVENTS = process.env.DEBUG_EVENTS === "true";
 import { prisma } from "../db/client";
 import { broadcast } from "../ws/broadcaster";
 import { findOrCreateViewer, findOrCreateSession } from "./viewer.service";
 import { incrementFollowerCount, incrementSubscriberCount, setLastFollow, setLastSub, getFollowersTarget, getSubscribersTarget, updateGoalsConfig } from "./goals.service";
+import { setStreamInfo, setViewerCount, clearStreamState } from "./stream.service";
 
 /**
  * Service StreamerBot — se connecte au WebSocket Server de StreamerBot
@@ -331,22 +334,27 @@ export async function connectToStreamerBot(options?: {
 
     // ===========================
     // DEBUG FILE LOGGER
-    // À retirer une fois que tout marche en production
+    // Activé uniquement avec DEBUG_EVENTS=true dans .env
+    // (appendFileSync est synchrone et peut impacter les perfs I/O en prod)
     // ===========================
-    const logFile = "./debug-events.log";
-    writeFileSync(logFile, `--- Castellan Debug Log — ${new Date().toISOString()} ---\n\n`);
+    if (DEBUG_EVENTS) {
+        const logFile = "./debug-events.log";
+        writeFileSync(logFile, `--- Castellan Debug Log — ${new Date().toISOString()} ---\n\n`);
 
-    client.on("*" as any, ({ event, data }: { event: any; data: any }) => {
-        const type = `${event?.source}.${event?.type}`;
-        if (type === "Inputs.InputMouseClick" || type === "Raw.SubAction") return;
+        client.on("*" as any, ({ event, data }: { event: any; data: any }) => {
+            const type = `${event?.source}.${event?.type}`;
+            if (type === "Inputs.InputMouseClick" || type === "Raw.SubAction") return;
 
-        const entry = `[${new Date().toISOString()}] ${type}\n${JSON.stringify(data, null, 2)}\n---\n\n`;
-        appendFileSync(logFile, entry);
+            const entry = `[${new Date().toISOString()}] ${type}\n${JSON.stringify(data, null, 2)}\n---\n\n`;
+            appendFileSync(logFile, entry);
 
-        if (type !== "Twitch.ChatMessage" && type !== "Raw.ActionCompleted") {
-            console.log(`[StreamerBot][DEBUG] 📨 ${type}`);
-        }
-    });
+            if (type !== "Twitch.ChatMessage" && type !== "Raw.ActionCompleted") {
+                console.log(`[StreamerBot][DEBUG] 📨 ${type}`);
+            }
+        });
+
+        console.log("[StreamerBot] 📝 Debug file logger activé (debug-events.log)");
+    }
 
     // ═══════════════════════════════════════════════════════════
     // TWITCH.* HANDLERS — fire from LIVE Twitch events only
@@ -517,6 +525,24 @@ export async function connectToStreamerBot(options?: {
 
             if (Object.keys(updates).length > 0) {
                 await prisma.stream.update({ where: { id: currentStreamId }, data: updates });
+
+                // Mettre à jour le stream service + broadcast pour l'overlay /frame
+                setStreamInfo({
+                    ...(updates.game ? { game: updates.game } : {}),
+                    ...(updates.title ? { title: updates.title } : {}),
+                });
+
+                const streamInfo = await prisma.stream.findUnique({ where: { id: currentStreamId } });
+                if (streamInfo) {
+                    broadcast({
+                        type: "stream:info",
+                        payload: {
+                            game: streamInfo.game ?? "Just Chatting",
+                            title: streamInfo.title,
+                            startedAt: streamInfo.startedAt.toISOString(),
+                        },
+                    });
+                }
             }
         } catch (err) {
             console.error("[StreamerBot] Erreur StreamUpdate:", err);
@@ -530,8 +556,11 @@ export async function connectToStreamerBot(options?: {
         const viewers = data.viewers ?? data.users ?? [];
         console.log(`[StreamerBot] 👥 Present Viewers: ${viewers.length} viewers`);
 
-        try {
-            for (const user of viewers) {
+        // Chaque viewer est traité indépendamment : si un upsert échoue,
+        // les autres sont quand même traités (avant, une erreur tuait tout le batch).
+        let processed = 0;
+        for (const user of viewers) {
+            try {
                 const viewer = extractViewer(user);
                 if (!viewer || !viewer.twitchId) continue;
 
@@ -551,8 +580,15 @@ export async function connectToStreamerBot(options?: {
                     where: { id: dbViewer.id },
                     data: { totalWatchTime: { increment: 5 } },
                 });
-            }
 
+                processed++;
+            } catch (err) {
+                const name = user?.login ?? user?.name ?? "inconnu";
+                console.error(`[StreamerBot] Erreur PresentViewers (${name}):`, err);
+            }
+        }
+
+        try {
             const activeCount = viewers.length;
             const stream = await prisma.stream.findUnique({ where: { id: currentStreamId } });
             if (stream && activeCount > (stream.peakViewers ?? 0)) {
@@ -561,8 +597,19 @@ export async function connectToStreamerBot(options?: {
                     data: { peakViewers: activeCount },
                 });
             }
+
+            // Broadcast le compteur de viewers pour l'overlay /frame
+            setViewerCount(activeCount);
+            broadcast({
+                type: "stream:viewers",
+                payload: { count: activeCount },
+            });
         } catch (err) {
-            console.error("[StreamerBot] Erreur PresentViewers:", err);
+            console.error("[StreamerBot] Erreur PresentViewers (peak/broadcast):", err);
+        }
+
+        if (processed < viewers.length) {
+            console.warn(`[StreamerBot] ⚠️ PresentViewers: ${processed}/${viewers.length} traités`);
         }
     });
 
@@ -598,6 +645,14 @@ export async function connectToStreamerBot(options?: {
                 });
                 currentStreamId = stream.id;
                 console.log(`[StreamerBot] 📝 Stream créé: ${stream.id}`);
+
+                // Stocker + broadcast les infos stream pour l'overlay /frame
+                const title = args.status ?? game;
+                setStreamInfo({ game, title, startedAt });
+                broadcast({
+                    type: "stream:info",
+                    payload: { game, title, startedAt },
+                });
             } catch (err) {
                 console.error("[StreamerBot] Erreur StreamStart:", err);
             }
@@ -666,6 +721,7 @@ export async function connectToStreamerBot(options?: {
                 console.log(`[StreamerBot] 📝 Stream terminé: ${currentStreamId}`);
                 currentStreamId = null;
                 currentBroadcasterId = null;
+                clearStreamState();
             } catch (err) {
                 console.error("[StreamerBot] Erreur StreamEnd:", err);
             }

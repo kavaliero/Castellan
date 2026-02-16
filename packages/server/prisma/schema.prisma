@@ -43,6 +43,7 @@ model Stream {
   game      String?           // Jeu actuel
   titleHistory String?        // JSON: ["titre1", "titre2", ...]
   gameHistory  String?        // JSON: ["jeu1", "jeu2", ...]
+  peakViewers  Int            @default(0) // Max viewers simultanés (PresentViewers heartbeat)
   startedAt DateTime        @default(now())
   endedAt   DateTime?
 

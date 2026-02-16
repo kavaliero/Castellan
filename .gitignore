@@ -35,6 +35,9 @@ Desktop.ini
 *.log
 debug-events.log
 
+# Runtime state (generated, survives restart)
+stream-state.json
+
 # Claude / AI
 .claude/
 

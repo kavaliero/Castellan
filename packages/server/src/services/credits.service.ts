@@ -208,6 +208,7 @@ export async function buildCredits(streamId: string, broadcasterId?: string | nu
     return {
         stream: {
             title: stream.title ?? "Stream sans titre",
+            game: stream.game ?? "Just Chatting",
             duration: durationMinutes,
             startedAt: stream.startedAt.toISOString(),
         },

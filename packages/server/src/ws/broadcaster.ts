@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { WSEvent } from "@castellan/shared";
 import { getGoalsInitPayload, getGoalsState } from "../services/goals.service";
+import { getStreamInfoPayload, getStreamViewersPayload } from "../services/stream.service";
 
 /**
  * Le Broadcaster gère toutes les connexions WebSocket.
@@ -57,33 +58,27 @@ export function initWebSocket(port: number = 3002): WebSocketServer {
     for (const goal of getGoalsInitPayload()) {
       socket.send(JSON.stringify({ type: "goal:update", payload: goal }));
     }
-    // Envoyer les last follow/sub comme alertes pour initialiser les noms
+    // Envoyer les last follow/sub comme events goals dédiés (pas alert:*)
+    // pour que l'overlay goals affiche les noms SANS déclencher de popups dans AlertsPage
     if (goalsState.lastFollow) {
       socket.send(JSON.stringify({
-        type: "alert:follow",
-        payload: {
-          viewer: {
-            twitchId: "",
-            username: goalsState.lastFollow.toLowerCase(),
-            displayName: goalsState.lastFollow,
-          },
-        },
+        type: "goal:lastFollow",
+        payload: { displayName: goalsState.lastFollow },
       }));
     }
     if (goalsState.lastSub) {
       socket.send(JSON.stringify({
-        type: "alert:sub",
-        payload: {
-          viewer: {
-            twitchId: "",
-            username: goalsState.lastSub.toLowerCase(),
-            displayName: goalsState.lastSub,
-          },
-          tier: 1,
-          months: 0,
-        },
+        type: "goal:lastSub",
+        payload: { displayName: goalsState.lastSub },
       }));
     }
+
+    // Envoyer l'état du stream en cours (pour l'overlay /frame)
+    const streamInfo = getStreamInfoPayload();
+    if (streamInfo) {
+      socket.send(JSON.stringify({ type: "stream:info", payload: streamInfo }));
+    }
+    socket.send(JSON.stringify({ type: "stream:viewers", payload: getStreamViewersPayload() }));
 
     // Répondre aux pings (keep-alive)
     socket.on("message", (raw) => {

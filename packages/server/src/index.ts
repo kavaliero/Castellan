@@ -4,6 +4,7 @@ import { initWebSocket, broadcast, getClientCount } from "./ws/broadcaster";
 import { connectToStreamerBot, getCurrentStreamId, setCurrentStreamId, getBroadcasterId, setBroadcasterId } from "./services/streamerbot.service";
 import { buildCredits } from "./services/credits.service";
 import { initGoals, getGoalsState, updateGoalsConfig, broadcastAllGoals } from "./services/goals.service";
+import { initStreamState } from "./services/stream.service";
 import { syncClips, getClips, getClipsCount, getClipsSyncedAt } from "./services/clips.service";
 import { prisma } from "./db/client";
 import { findOrCreateViewer, findOrCreateSession } from "./services/viewer.service";
@@ -268,6 +269,7 @@ app.post("/api/event", async (req, res) => {
 // ===========================
 async function start() {
   initGoals();
+  initStreamState();
   initWebSocket(3002);
 
   app.listen(3001, () => {

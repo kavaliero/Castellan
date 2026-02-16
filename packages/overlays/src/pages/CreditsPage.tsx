@@ -23,7 +23,7 @@ function mapCreditsData(credits: CreditsPayload) {
   return {
     stream: {
       title: credits.stream.title,
-      game: credits.stream.title, // pas de champ game dans le payload, on utilise le title
+      game: credits.stream.game,
       duration: formatDuration(credits.stream.duration),
     },
     stats: {

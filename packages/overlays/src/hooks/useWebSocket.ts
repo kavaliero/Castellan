@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { WSEvent } from "@castellan/shared";
 
 /**
@@ -31,9 +31,11 @@ export function useWebSocket(onEvent: (event: WSEvent) => void) {
     const reconnectDelay = useRef(1000);
     const [isConnected, setIsConnected] = useState(false);
 
-    // useCallback pour que la référence de la fonction ne change pas
-    // à chaque render (sinon useEffect se relancerait en boucle)
-    const stableOnEvent = useCallback(onEvent, []);
+    // useRef pour toujours appeler la DERNIÈRE version du callback,
+    // même si le composant parent a re-rendu avec de nouvelles closures.
+    // L'ancien pattern useCallback(onEvent, []) figeait la première version.
+    const onEventRef = useRef(onEvent);
+    onEventRef.current = onEvent;
 
     useEffect(() => {
         let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -56,7 +58,7 @@ export function useWebSocket(onEvent: (event: WSEvent) => void) {
             ws.onmessage = (rawMessage) => {
                 try {
                     const event = JSON.parse(rawMessage.data) as WSEvent;
-                    stableOnEvent(event);
+                    onEventRef.current(event);
                 } catch (err) {
                     console.error("[WS] Message invalide:", err);
                 }
@@ -88,7 +90,8 @@ export function useWebSocket(onEvent: (event: WSEvent) => void) {
             clearTimeout(reconnectTimer);
             wsRef.current?.close();
         };
-    }, [stableOnEvent]);
+    }, []); // [] est correct ici : la connexion WS ne doit se faire qu'une fois,
+            // et onEventRef.current est toujours à jour via le ref.
 
     return { isConnected };
 }

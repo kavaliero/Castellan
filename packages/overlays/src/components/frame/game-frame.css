@@ -1,0 +1,357 @@
+/* ═══════════════════════════════════════════════════════════════
+   GAME FRAME — Cadre webcam in-game avec parchemin roulé
+
+   S'utilise comme Browser Source OBS par-dessus la webcam.
+   Le centre est transparent. Le parchemin en bas affiche
+   le pseudo Twitch + infos stream.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
+
+/* ─── Container principal ─────────────────────────────────── */
+
+.game-frame {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+/* ─── Bordure dorée (identique à WebcamFrame) ─────────────── */
+
+.game-frame-border {
+  position: absolute;
+  inset: 0;
+  border: 8px solid #B8922E;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow:
+    0 0 25px rgba(0, 0, 0, 0.7),
+    0 0 6px rgba(180, 140, 60, 0.35),
+    inset 0 0 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 4px rgba(212, 168, 67, 0.25);
+}
+
+.game-frame-inner-border {
+  position: absolute;
+  inset: 14px;
+  border: 2px solid rgba(212, 168, 67, 0.35);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── Coins ornementaux ───────────────────────────────────── */
+
+.game-frame-corner {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.game-frame-corner--tl {
+  top: 18px;
+  left: 18px;
+  border-top: 3px solid #D4A843;
+  border-left: 3px solid #D4A843;
+  border-radius: 8px 0 0 0;
+}
+
+.game-frame-corner--tr {
+  top: 18px;
+  right: 18px;
+  border-top: 3px solid #D4A843;
+  border-right: 3px solid #D4A843;
+  border-radius: 0 8px 0 0;
+}
+
+.game-frame-corner--bl {
+  bottom: 18px;
+  left: 18px;
+  border-bottom: 3px solid #D4A843;
+  border-left: 3px solid #D4A843;
+  border-radius: 0 0 0 8px;
+}
+
+.game-frame-corner--br {
+  bottom: 18px;
+  right: 18px;
+  border-bottom: 3px solid #D4A843;
+  border-right: 3px solid #D4A843;
+  border-radius: 0 0 8px 0;
+}
+
+.game-frame-corner::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #FFD700, #B8922E);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.game-frame-corner--tl::after { top: -4px; left: -4px; }
+.game-frame-corner--tr::after { top: -4px; right: -4px; }
+.game-frame-corner--bl::after { bottom: -4px; left: -4px; }
+.game-frame-corner--br::after { bottom: -4px; right: -4px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PARCHEMIN ROULÉ
+   ═══════════════════════════════════════════════════════════════ */
+
+.game-frame-parchment {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+
+  /* Dimensionnement — pleine largeur pour lisibilité OBS downscale */
+  width: 60%;
+
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.7));
+}
+
+/* ─── Surface centrale du parchemin ───────────────────────── */
+
+.game-frame-parchment-surface {
+  flex: 1;
+  padding: 24px 40px 18px;
+  text-align: center;
+
+  /* Texture parchemin */
+  background:
+    /* Grain subtil */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 109, 70, 0.03) 2px,
+      rgba(139, 109, 70, 0.03) 4px
+    ),
+    /* Taches d'usure */
+    radial-gradient(ellipse at 20% 50%, rgba(160, 120, 60, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 30%, rgba(140, 100, 50, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 80%, rgba(150, 110, 55, 0.08) 0%, transparent 50%),
+    /* Gradient principal */
+    linear-gradient(
+      180deg,
+      #d4b896 0%,
+      #dcc5a0 15%,
+      #d8bd96 40%,
+      #c9a97a 70%,
+      #c4a270 100%
+    );
+
+  /* Bords brûlés / usés */
+  border-top: 2px solid rgba(160, 120, 60, 0.4);
+  border-bottom: 2px solid rgba(120, 85, 40, 0.5);
+
+  /* Ombre intérieure pour l'effet de profondeur */
+  box-shadow:
+    inset 0 2px 8px rgba(100, 70, 30, 0.15),
+    inset 0 -2px 8px rgba(100, 70, 30, 0.2);
+}
+
+/* ─── Rouleaux latéraux ───────────────────────────────────── */
+
+.game-frame-parchment-roll {
+  width: 40px;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: 20px;
+  position: relative;
+}
+
+.game-frame-parchment-roll--left {
+  background:
+    linear-gradient(
+      90deg,
+      #8B6914 0%,
+      #C9A54A 20%,
+      #E8D08C 40%,
+      #C9A54A 55%,
+      #A07D28 70%,
+      #C4A040 85%,
+      #E0C878 92%,
+      #B8922E 100%
+    );
+  border-radius: 20px 4px 4px 20px;
+  box-shadow:
+    -4px 0 10px rgba(0, 0, 0, 0.45),
+    inset 3px 0 6px rgba(255, 215, 0, 0.15);
+}
+
+.game-frame-parchment-roll--right {
+  background:
+    linear-gradient(
+      90deg,
+      #B8922E 0%,
+      #E0C878 8%,
+      #C4A040 15%,
+      #A07D28 30%,
+      #C9A54A 45%,
+      #E8D08C 60%,
+      #C9A54A 80%,
+      #8B6914 100%
+    );
+  border-radius: 4px 20px 20px 4px;
+  box-shadow:
+    4px 0 10px rgba(0, 0, 0, 0.45),
+    inset -3px 0 6px rgba(255, 215, 0, 0.15);
+}
+
+/* Reflet lumineux sur les rouleaux */
+.game-frame-parchment-roll::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  width: 5px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 235, 160, 0.4) 30%,
+    rgba(255, 235, 160, 0.6) 50%,
+    rgba(255, 235, 160, 0.4) 70%,
+    transparent
+  );
+  border-radius: 2px;
+}
+
+.game-frame-parchment-roll--left::before {
+  left: 10px;
+}
+
+.game-frame-parchment-roll--right::before {
+  right: 10px;
+}
+
+/* Capuchons haut et bas des rouleaux */
+.game-frame-parchment-roll::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 12px;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse at 50% 30%, #FFD700, #B8922E 60%, #8B6914);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* On affiche les capuchons en haut et bas via un pseudo-element dupliqué */
+.game-frame-parchment-roll--left::after,
+.game-frame-parchment-roll--right::after {
+  top: -4px;
+}
+
+/* ─── Pseudo Twitch ───────────────────────────────────────── */
+
+.game-frame-parchment-name {
+  font-family: 'MedievalSharp', cursive;
+  font-size: 72px;
+  font-weight: 700;
+  color: #3A2008;
+  letter-spacing: 4px;
+  line-height: 1.1;
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 0 rgba(210, 180, 120, 0.8),
+    0 3px 10px rgba(100, 70, 20, 0.3);
+
+  animation: parchmentNameGlow 4s ease-in-out infinite;
+}
+
+@keyframes parchmentNameGlow {
+  0%, 100% {
+    color: #3A2008;
+    text-shadow:
+      0 2px 0 rgba(210, 180, 120, 0.8),
+      0 3px 10px rgba(100, 70, 20, 0.3);
+  }
+  50% {
+    color: #2E1805;
+    text-shadow:
+      0 2px 0 rgba(210, 180, 120, 1),
+      0 3px 14px rgba(100, 70, 20, 0.4),
+      0 0 30px rgba(180, 140, 60, 0.2);
+  }
+}
+
+/* ─── Séparateur décoratif ────────────────────────────────── */
+
+.game-frame-parchment-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 8px 0 6px;
+  position: relative;
+}
+
+.game-frame-parchment-separator::before,
+.game-frame-parchment-separator::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  max-width: 160px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(120, 85, 35, 0.5),
+    transparent
+  );
+}
+
+.game-frame-parchment-separator-ornament {
+  font-size: 18px;
+  color: rgba(120, 85, 35, 0.6);
+  line-height: 1;
+}
+
+/* ─── Infos stream (uptime + viewers) ─────────────────────── */
+
+.game-frame-parchment-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  white-space: nowrap;
+}
+
+.game-frame-parchment-info-item {
+  font-family: 'IM Fell English', serif;
+  font-size: 42px;
+  color: #4A3020;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  text-shadow:
+    0 1px 0 rgba(210, 180, 120, 0.6);
+}
+
+.game-frame-parchment-info-icon {
+  font-size: 24px;
+  font-style: normal;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.game-frame-parchment-info-divider {
+  color: rgba(120, 85, 35, 0.6);
+  font-size: 20px;
+}
