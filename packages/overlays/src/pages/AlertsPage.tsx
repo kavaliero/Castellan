@@ -1,34 +1,33 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useSound } from "../hooks/useSound";
-import { AlertPopup } from "../components/alerts/AlertPopup";
+import { ScrollAlert } from "../components/alerts/ScrollAlert";
+import type { ScrollAlertType, ScrollAlertVariant } from "../components/alerts/ScrollAlert";
 import type { WSEvent } from "@castellan/shared";
 
 /**
- * Page Alerts — gère la FILE d'attente des alertes.
- * 
- * Problème : si 3 personnes follow en même temps, on ne veut pas
- * 3 popups empilées. On veut les montrer une par une.
- * 
- * Solution : une queue. Chaque alerte est ajoutée à la queue.
- * On affiche la première, et quand elle disparaît (après X secondes),
- * on passe à la suivante.
- * 
- * Le type AlertItem contient toutes les infos nécessaires pour
- * afficher n'importe quel type d'alerte (follow, sub, raid, bits, dice).
+ * Page Alerts — gère la FILE d'attente des alertes "Parchemin Scellé".
+ *
+ * Chaque alerte est un parchemin avec un sceau de cire coloré.
+ * L'animation complète dure ~8s (apparition, crack du sceau,
+ * déroulement, pause lecture, disparition).
  */
 
 interface AlertItem {
     id: string;
-    type: string;
-    title: string;
-    message: string;
+    type: ScrollAlertType;
+    variant: ScrollAlertVariant;
     icon: string;
+    title: string;
+    viewerName: string;
+    subtitle?: string;
+    ribbon?: string;
     sound: string;
 }
 
 // Durée d'affichage d'une alerte (en ms)
-const ALERT_DURATION = 5000;
+// Doit correspondre à la durée totale de l'animation CSS (~9.5s)
+const ALERT_DURATION = 9500;
 
 export function AlertsPage() {
     const [currentAlert, setCurrentAlert] = useState<AlertItem | null>(null);
@@ -36,13 +35,7 @@ export function AlertsPage() {
     const isShowingRef = useRef(false);
     const { playSound } = useSound();
 
-    /**
-     * Affiche la prochaine alerte de la queue.
-     * Se rappelle elle-même après ALERT_DURATION pour enchaîner.
-     */
-
     const showNext = useCallback(() => {
-
         if (queueRef.current.length === 0) {
             isShowingRef.current = false;
             setCurrentAlert(null);
@@ -58,11 +51,6 @@ export function AlertsPage() {
             showNext();
         }, ALERT_DURATION);
     }, [playSound]);
-
-    /**
-     * Ajoute une alerte à la queue.
-     * Si rien n'est affiché, lance immédiatement.
-     */
 
     const enqueueAlert = useCallback(
         (alert: AlertItem) => {
@@ -81,31 +69,59 @@ export function AlertsPage() {
                     enqueueAlert({
                         id: crypto.randomUUID(),
                         type: "follow",
-                        icon: "❤️",
-                        title: "Nouveau Follower !",
-                        message: event.payload.viewer.displayName,
+                        variant: "minor",
+                        icon: "⚔️",
+                        title: "Un nouveau chevalier rejoint La Kavalry !",
+                        viewerName: event.payload.viewer.displayName,
                         sound: "follow",
                     });
                     break;
 
-                case "alert:sub":
+                case "alert:sub": {
+                    const isResub = event.payload.months > 1;
+                    const tierName = event.payload.tier === 3 ? "Seigneur"
+                                   : event.payload.tier === 2 ? "Chevalier"
+                                   : "Écuyer";
                     enqueueAlert({
                         id: crypto.randomUUID(),
-                        type: "sub",
-                        icon: "⭐",
-                        title: `Sub Tier ${event.payload.tier} !`,
-                        message: `${event.payload.viewer.displayName} (${event.payload.months} mois)`,
+                        type: isResub ? "resub" : "sub",
+                        variant: "minor",
+                        icon: "👑",
+                        title: isResub ? "Renouvelle son serment !" : "Serment d'allégeance !",
+                        viewerName: event.payload.viewer.displayName,
+                        subtitle: `Rang : ${tierName}`,
+                        ribbon: isResub ? `${event.payload.months} lunes` : undefined,
                         sound: "sub",
                     });
                     break;
+                }
+
+                case "alert:gift_sub": {
+                    const gifterName = event.payload.anonymous
+                        ? "Un bienfaiteur anonyme"
+                        : event.payload.viewer.displayName;
+                    enqueueAlert({
+                        id: crypto.randomUUID(),
+                        type: "gift_sub",
+                        variant: "minor",
+                        icon: "🎁",
+                        title: "Don d'allégeance !",
+                        viewerName: gifterName,
+                        subtitle: `offre un sub à ${event.payload.recipientName}`,
+                        sound: "sub",
+                    });
+                    break;
+                }
 
                 case "alert:raid":
                     enqueueAlert({
                         id: crypto.randomUUID(),
                         type: "raid",
+                        variant: "major",
                         icon: "🏰",
-                        title: `Raid de ${event.payload.fromChannel} !`,
-                        message: `${event.payload.viewers} chevaliers débarquent !`,
+                        title: "Les portes sont assiégées !",
+                        viewerName: event.payload.fromChannel,
+                        subtitle: `${event.payload.viewers} chevaliers débarquent !`,
                         sound: "raid",
                     });
                     break;
@@ -114,10 +130,37 @@ export function AlertsPage() {
                     enqueueAlert({
                         id: crypto.randomUUID(),
                         type: "bits",
+                        variant: "minor",
                         icon: "💎",
-                        title: `${event.payload.amount} Bits !`,
-                        message: event.payload.viewer.displayName,
+                        title: "Tribut au royaume !",
+                        viewerName: event.payload.viewer.displayName,
+                        subtitle: `${event.payload.amount} gemmes`,
                         sound: "bits",
+                    });
+                    break;
+
+                case "alert:hype_train":
+                    enqueueAlert({
+                        id: crypto.randomUUID(),
+                        type: "hype_train",
+                        variant: "major",
+                        icon: "🔥",
+                        title: `Hype Train — Niveau ${event.payload.level} !`,
+                        viewerName: "Le royaume s'enflamme !",
+                        subtitle: `${event.payload.totalPoints} points`,
+                        sound: "raid",
+                    });
+                    break;
+
+                case "alert:first_word":
+                    enqueueAlert({
+                        id: crypto.randomUUID(),
+                        type: "first_word",
+                        variant: "minor",
+                        icon: "✒",
+                        title: "Première parole au conseil !",
+                        viewerName: event.payload.viewer.displayName,
+                        sound: "follow",
                     });
                     break;
 
@@ -125,15 +168,16 @@ export function AlertsPage() {
                     enqueueAlert({
                         id: crypto.randomUUID(),
                         type: "dice",
+                        variant: "minor",
                         icon: "🎲",
                         title: `Lancer de d${event.payload.faces}`,
-                        message: `${event.payload.viewer.displayName} → ${event.payload.result} !`,
+                        viewerName: event.payload.viewer.displayName,
+                        subtitle: `Résultat : ${event.payload.result}`,
                         sound: "dice",
                     });
                     break;
             }
         },
-
         [enqueueAlert]
     );
 
@@ -142,7 +186,7 @@ export function AlertsPage() {
     return (
         <div className="alerts-page">
             {currentAlert && (
-                <AlertPopup key={currentAlert.id} alert={currentAlert} />
+                <ScrollAlert key={currentAlert.id} alert={currentAlert} />
             )}
         </div>
     );

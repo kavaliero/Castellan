@@ -255,6 +255,65 @@ app.post("/api/event", async (req, res) => {
         await prisma.streamEvent.create({ data: { streamId, viewerId: dbViewer.id, type: "follow" } });
         broadcast({ type: "alert:follow", payload: { viewer: event.viewer } });
       }
+
+      if (event.type === "sub" && event.data) {
+        const tier = event.data.tier ?? 1;
+        const months = event.data.months ?? 1;
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "sub", data: JSON.stringify({ tier, months }) },
+        });
+        broadcast({ type: "alert:sub", payload: { viewer: event.viewer, tier, months } });
+      }
+
+      if (event.type === "gift_sub" && event.data) {
+        const recipientName = event.data.recipientName ?? "Inconnu";
+        const tier = event.data.tier ?? 1;
+        const totalGifted = event.data.totalGifted ?? 1;
+        const anonymous = event.data.anonymous ?? false;
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "gift_sub", data: JSON.stringify({ recipientName, tier, totalGifted, anonymous }) },
+        });
+        broadcast({ type: "alert:gift_sub", payload: { viewer: event.viewer, recipientName, tier, totalGifted, anonymous } });
+      }
+
+      if (event.type === "raid" && event.data) {
+        const viewers = event.data.viewers ?? 0;
+        const fromChannel = event.data.fromChannel ?? event.viewer.displayName;
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "raid", data: JSON.stringify({ viewers, fromChannel }) },
+        });
+        broadcast({ type: "alert:raid", payload: { fromChannel, viewers, game: event.data.game } });
+      }
+
+      if (event.type === "bits" && event.data) {
+        const amount = event.data.amount ?? 0;
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "bits", data: JSON.stringify({ amount }) },
+        });
+        broadcast({ type: "alert:bits", payload: { viewer: event.viewer, amount } });
+      }
+
+      if (event.type === "dice" && event.data) {
+        broadcast({
+          type: "alert:dice",
+          payload: { viewer: event.viewer, faces: event.data.faces ?? 20, result: event.data.result ?? 1 },
+        });
+      }
+
+      if (event.type === "hype_train" && event.data) {
+        broadcast({
+          type: "alert:hype_train",
+          payload: {
+            level: event.data.level ?? 1,
+            totalPoints: event.data.totalPoints ?? 0,
+            progress: event.data.progress ?? 0,
+          },
+        });
+      }
+
+      if (event.type === "first_word") {
+        broadcast({ type: "alert:first_word", payload: { viewer: event.viewer } });
+      }
     }
 
     res.json({ ok: true });

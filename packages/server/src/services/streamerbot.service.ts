@@ -24,6 +24,12 @@ import { setStreamInfo, setViewerCount, clearStreamState } from "./stream.servic
 let client: StreamerbotClient;
 let currentStreamId: string | null = null;
 let currentBroadcasterId: string | null = null;
+let viewerCountPollTimer: ReturnType<typeof setInterval> | null = null;
+
+// Viewers qui ont déjà parlé pendant le stream en cours.
+// Utilisé pour détecter le "first word" (première prise de parole).
+// Reset au début et à la fin de chaque stream.
+const spokenViewers = new Set<string>();
 
 // ─── Public accessors ──────────────────────────────────────
 
@@ -300,6 +306,38 @@ async function handleRewardRedemption(
     }
 }
 
+async function handleHypeTrain(level: number, totalPoints: number, progress: number) {
+    console.log(`[StreamerBot] 🔥 Hype Train Level ${level} — ${totalPoints} pts`);
+
+    try {
+        if (currentStreamId) {
+            await prisma.streamEvent.create({
+                data: {
+                    streamId: currentStreamId,
+                    type: "hype_train",
+                    data: JSON.stringify({ level, totalPoints, progress }),
+                },
+            });
+        }
+
+        broadcast({
+            type: "alert:hype_train",
+            payload: { level, totalPoints, progress },
+        });
+    } catch (err) {
+        console.error("[StreamerBot] Erreur HypeTrain:", err);
+    }
+}
+
+async function handleFirstWord(viewer: ViewerInfo) {
+    console.log(`[StreamerBot] 🪶 First Word: ${viewer.displayName}`);
+
+    broadcast({
+        type: "alert:first_word",
+        payload: { viewer },
+    });
+}
+
 // ═══════════════════════════════════════════════════════════════
 // MAIN CONNECTION
 // ═══════════════════════════════════════════════════════════════
@@ -323,9 +361,11 @@ export async function connectToStreamerBot(options?: {
         retries: -1,
         onConnect: () => {
             console.log("[StreamerBot] ✅ Connecté au WebSocket Server");
+            startViewerCountPolling();
         },
         onDisconnect: () => {
             console.log("[StreamerBot] ❌ Déconnecté — tentative de reconnexion...");
+            stopViewerCountPolling();
         },
         onError: (err) => {
             console.error("[StreamerBot] Erreur:", err);
@@ -334,27 +374,45 @@ export async function connectToStreamerBot(options?: {
 
     // ===========================
     // DEBUG FILE LOGGER
-    // Activé uniquement avec DEBUG_EVENTS=true dans .env
-    // (appendFileSync est synchrone et peut impacter les perfs I/O en prod)
+    // Activé avec DEBUG_EVENTS=true dans .env (tous les events)
+    // Les events viewer-related sont TOUJOURS loggés dans le fichier
+    // pour faciliter le diagnostic du viewer count.
     // ===========================
-    if (DEBUG_EVENTS) {
-        const logFile = "./debug-events.log";
-        writeFileSync(logFile, `--- Castellan Debug Log — ${new Date().toISOString()} ---\n\n`);
+    const logFile = "./debug-events.log";
+    writeFileSync(logFile, `--- Castellan Debug Log — ${new Date().toISOString()} ---\n\n`);
 
-        client.on("*" as any, ({ event, data }: { event: any; data: any }) => {
-            const type = `${event?.source}.${event?.type}`;
-            if (type === "Inputs.InputMouseClick" || type === "Raw.SubAction") return;
+    const VIEWER_EVENTS = new Set([
+        "Twitch.PresentViewers",
+        "Twitch.ViewerCountUpdate",
+        "Twitch.StreamOnline",
+        "Twitch.StreamOffline",
+    ]);
 
+    client.on("*" as any, ({ event, data }: { event: any; data: any }) => {
+        const type = `${event?.source}.${event?.type}`;
+        if (type === "Inputs.InputMouseClick" || type === "Raw.SubAction") return;
+
+
+        if (DEBUG_EVENTS) {
+            console.log(`[StreamerBot][DEBUG] 📨 ${type}`);
             const entry = `[${new Date().toISOString()}] ${type}\n${JSON.stringify(data, null, 2)}\n---\n\n`;
             appendFileSync(logFile, entry);
+        }
 
-            if (type !== "Twitch.ChatMessage" && type !== "Raw.ActionCompleted") {
-                console.log(`[StreamerBot][DEBUG] 📨 ${type}`);
-            }
-        });
+        // Toujours logger les events liés aux viewers dans le fichier
+        /*const isViewerEvent = VIEWER_EVENTS.has(type);
 
-        console.log("[StreamerBot] 📝 Debug file logger activé (debug-events.log)");
-    }
+        if (DEBUG_EVENTS || isViewerEvent) {
+            const entry = `[${new Date().toISOString()}] ${type}\n${JSON.stringify(data, null, 2)}\n---\n\n`;
+            appendFileSync(logFile, entry);
+        }
+
+        if (DEBUG_EVENTS && type !== "Twitch.ChatMessage" && type !== "Raw.ActionCompleted") {
+            console.log(`[StreamerBot][DEBUG] 📨 ${type}`);
+        }*/
+    });
+
+    console.log("[StreamerBot] 📝 File logger activé (debug-events.log) — viewer events toujours loggés");
 
     // ═══════════════════════════════════════════════════════════
     // TWITCH.* HANDLERS — fire from LIVE Twitch events only
@@ -384,6 +442,14 @@ export async function connectToStreamerBot(options?: {
         try {
             const dbViewer = await findOrCreateViewer(viewer);
             const session = await findOrCreateSession(dbViewer.id, currentStreamId);
+
+            // First word : si ce viewer n'a pas encore parlé dans ce stream
+            if (!spokenViewers.has(viewer.twitchId)) {
+                spokenViewers.add(viewer.twitchId);
+                if (session.messageCount === 0) {
+                    await handleFirstWord(viewer);
+                }
+            }
 
             await prisma.chatMessage.create({
                 data: { streamId: currentStreamId, viewerId: dbViewer.id, content },
@@ -495,6 +561,36 @@ export async function connectToStreamerBot(options?: {
         await handleRewardRedemption(viewer, rewardName, rewardCost);
     });
 
+    // ── Hype Train (live) ──
+    client.on("Twitch.HypeTrainStart" as any, async ({ data }: { data: any }) => {
+        const level = data.level ?? 1;
+        const totalPoints = data.total ?? data.totalPoints ?? 0;
+        const progress = data.progress ?? 0;
+        await handleHypeTrain(level, totalPoints, progress);
+    });
+
+    client.on("Twitch.HypeTrainLevelUp" as any, async ({ data }: { data: any }) => {
+        const level = data.level ?? 1;
+        const totalPoints = data.total ?? data.totalPoints ?? 0;
+        const progress = data.progress ?? 0;
+        await handleHypeTrain(level, totalPoints, progress);
+    });
+
+    // ── Viewer Count Update (live) ──
+    // Cet event fire quand le viewer count change sur Twitch.
+    // C'est la source PRINCIPALE pour le compteur de viewers dans l'overlay /frame.
+    // (PresentViewers sert au tracking DB des sessions individuelles)
+    client.on("Twitch.ViewerCountUpdate", async ({ data }: { data: any }) => {
+        const count = data.viewers ?? 0;
+        console.log(`[StreamerBot] 👁️ ViewerCountUpdate: ${count} viewers`);
+
+        setViewerCount(count);
+        broadcast({
+            type: "stream:viewers",
+            payload: { count },
+        });
+    });
+
     // ── Stream Update (live) ──
     client.on("Twitch.StreamUpdate", async ({ data }: { data: any }) => {
         if (!currentStreamId) return;
@@ -551,10 +647,20 @@ export async function connectToStreamerBot(options?: {
 
     // ── Present Viewers (live heartbeat) ──
     client.on("Twitch.PresentViewers", async ({ data }: { data: any }) => {
-        if (!currentStreamId) return;
-
         const viewers = data.viewers ?? data.users ?? [];
         console.log(`[StreamerBot] 👥 Present Viewers: ${viewers.length} viewers`);
+
+        // Toujours broadcast le compteur pour l'overlay /frame,
+        // même si currentStreamId n'est pas défini (ex: restart serveur mid-stream)
+        const activeCount = viewers.length;
+        setViewerCount(activeCount);
+        broadcast({
+            type: "stream:viewers",
+            payload: { count: activeCount },
+        });
+
+        // Le tracking DB (sessions, watch time, peak) nécessite un stream en cours
+        if (!currentStreamId) return;
 
         // Chaque viewer est traité indépendamment : si un upsert échoue,
         // les autres sont quand même traités (avant, une erreur tuait tout le batch).
@@ -589,7 +695,6 @@ export async function connectToStreamerBot(options?: {
         }
 
         try {
-            const activeCount = viewers.length;
             const stream = await prisma.stream.findUnique({ where: { id: currentStreamId } });
             if (stream && activeCount > (stream.peakViewers ?? 0)) {
                 await prisma.stream.update({
@@ -597,15 +702,8 @@ export async function connectToStreamerBot(options?: {
                     data: { peakViewers: activeCount },
                 });
             }
-
-            // Broadcast le compteur de viewers pour l'overlay /frame
-            setViewerCount(activeCount);
-            broadcast({
-                type: "stream:viewers",
-                payload: { count: activeCount },
-            });
         } catch (err) {
-            console.error("[StreamerBot] Erreur PresentViewers (peak/broadcast):", err);
+            console.error("[StreamerBot] Erreur PresentViewers (peak):", err);
         }
 
         if (processed < viewers.length) {
@@ -644,6 +742,7 @@ export async function connectToStreamerBot(options?: {
                     },
                 });
                 currentStreamId = stream.id;
+                spokenViewers.clear();
                 console.log(`[StreamerBot] 📝 Stream créé: ${stream.id}`);
 
                 // Stocker + broadcast les infos stream pour l'overlay /frame
@@ -721,6 +820,7 @@ export async function connectToStreamerBot(options?: {
                 console.log(`[StreamerBot] 📝 Stream terminé: ${currentStreamId}`);
                 currentStreamId = null;
                 currentBroadcasterId = null;
+                spokenViewers.clear();
                 clearStreamState();
             } catch (err) {
                 console.error("[StreamerBot] Erreur StreamEnd:", err);
@@ -805,10 +905,61 @@ export async function connectToStreamerBot(options?: {
                 break;
             }
 
+            case "HypeTrain": {
+                const level = args.level ?? 1;
+                const totalPoints = args.totalPoints ?? 0;
+                const progress = args.progress ?? 0;
+                await handleHypeTrain(level, totalPoints, progress);
+                break;
+            }
+
             default:
                 break;
         }
     });
 
     console.log("[StreamerBot] 📡 Subscriptions enregistrées, en attente d'events...");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEWER COUNT POLLING — fallback si ViewerCountUpdate ne fire pas
+//
+// Utilise client.getActiveViewers() toutes les 60s pour récupérer
+// le nombre de viewers actifs directement via l'API StreamerBot.
+// Sert aussi de "premier fetch" au démarrage pour ne pas rester à 0.
+// ═══════════════════════════════════════════════════════════════
+
+async function pollViewerCount() {
+    try {
+        const response = await client.getActiveViewers();
+        if (response.status === "ok") {
+            const count = response.count ?? response.viewers?.length ?? 0;
+            console.log(`[StreamerBot] 📊 Poll viewers: ${count} actifs`);
+
+            setViewerCount(count);
+            broadcast({
+                type: "stream:viewers",
+                payload: { count },
+            });
+        }
+    } catch (err) {
+        // Silencieux — le polling est un fallback, pas critique
+        console.warn("[StreamerBot] ⚠️ Poll viewers échoué:", (err as Error).message);
+    }
+}
+
+function startViewerCountPolling() {
+    stopViewerCountPolling();
+    // Premier fetch immédiat (après 5s pour laisser le temps à la connexion de se stabiliser)
+    setTimeout(() => pollViewerCount(), 5000);
+    // Puis toutes les 60s
+    viewerCountPollTimer = setInterval(pollViewerCount, 60_000);
+    console.log("[StreamerBot] 📊 Viewer count polling démarré (60s)");
+}
+
+function stopViewerCountPolling() {
+    if (viewerCountPollTimer) {
+        clearInterval(viewerCountPollTimer);
+        viewerCountPollTimer = null;
+    }
 }

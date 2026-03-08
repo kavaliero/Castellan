@@ -29,7 +29,7 @@ export interface Viewer extends ViewerInfo {
   }
 
 
-export type IncomingEventType = 'message' | 'follow' | 'sub' | 'raid' | 'bits' | 'join' | 'leave' | 'dice' | 'channel_point_redemption';
+export type IncomingEventType = 'message' | 'follow' | 'sub' | 'raid' | 'bits' | 'join' | 'leave' | 'dice' | 'channel_point_redemption' | 'gift_sub' | 'hype_train' | 'first_word';
 
 /**
  * Ce que StreamerBot POST au server.
@@ -82,6 +82,14 @@ export interface IncomingEventData {
     // channel point redemption
     rewardName?: string;
     rewardCost?: number;
+    // gift_sub
+    recipientName?: string;
+    totalGifted?: number;
+    anonymous?: boolean;
+    // hype_train
+    level?: number;
+    totalPoints?: number;
+    progress?: number;
   }
 
 
@@ -120,6 +128,12 @@ export interface IncomingEventData {
 } | {
     type: 'alert:channel_point_redemption';
     payload: AlertChannelPointRedemptionPayload
+} | {
+    type: 'alert:hype_train';
+    payload: AlertHypeTrainPayload;
+} | {
+    type: 'alert:first_word';
+    payload: AlertFirstWordPayload;
 } | {
     type: 'credits:data';
     payload: CreditsPayload;
@@ -197,6 +211,16 @@ export interface AlertChannelPointRedemptionPayload {
     viewer: ViewerInfo;
     rewardName: string;
     rewardCost: number;
+}
+
+export interface AlertHypeTrainPayload {
+    level: number;
+    totalPoints: number;
+    progress: number;
+}
+
+export interface AlertFirstWordPayload {
+    viewer: ViewerInfo;
 }
 
 // ============================================

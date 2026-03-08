@@ -1,77 +1,409 @@
+/* ═══════════════════════════════════════════════════════════════
+   PARCHEMIN SCELLE — Systeme d'alertes medieval
+
+   Animation sequencee (~9.5s total) :
+   1. 0-0.8s   : parchemin apparait (slide down + scale)
+   2. 0.3-0.8s : sceau apparait au centre
+   3. 1.0-1.3s : ligne de craquement visible
+   4. 1.2-1.6s : sceau se split + icone disparait
+   5. 1.5-3.5s : contenu se deroule (2s, plus lent)
+   6. 3.5-7.5s : pause lecture (~4s)
+   7. 8.0-9.0s : disparition (fade out + slide up)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
+
+/* ─── Container ────────────────────────────────────────────── */
+
 .alerts-page {
-    position: fixed;
-    top: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+/* ─── Scroll Wrapper ───────────────────────────────────────── */
+
+.scroll-alert {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation:
+    scroll-enter 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    scroll-exit  1.0s ease-in 8.0s forwards;
+}
+
+.scroll-alert--minor {
+  max-width: 400px;
+}
+
+.scroll-alert--major {
+  max-width: 520px;
+}
+
+/* ─── Corps parchemin ──────────────────────────────────────── */
+
+.scroll-parchment {
+  position: relative;
+  min-width: 360px;
+  border-radius: 4px;
+  overflow: hidden;
+
+  /* Texture parchemin via gradients superposes */
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 105, 20, 0.03) 2px,
+      rgba(139, 105, 20, 0.03) 4px
+    ),
+    linear-gradient(180deg,
+      #F5E6C8 0%,
+      #E8D5A8 15%,
+      #F0DDB5 50%,
+      #E2CFA0 85%,
+      #D4C090 100%
+    );
+
+  border: 3px solid #B8922E;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(180, 140, 60, 0.25),
+    inset 0 0 30px rgba(139, 105, 20, 0.15);
+}
+
+.scroll-alert--major .scroll-parchment {
+  min-width: 460px;
+}
+
+/* ─── Bords roules (haut et bas) ───────────────────────────── */
+
+.scroll-roll {
+  display: block;
+  height: 20px;
+  background:
+    linear-gradient(180deg,
+      #C4A060 0%,
+      #D4B080 20%,
+      #B8922E 40%,
+      #A07818 60%,
+      #C4A060 80%,
+      #D4A843 100%
+    );
+  border: 2px solid #8B6914;
+  border-radius: 10px;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 215, 0, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Zone de contenu (deroulement anime) ──────────────────── */
+
+.scroll-content {
+  max-height: 0;
+  overflow: hidden;
+  animation: scroll-unroll 2s cubic-bezier(0.22, 1, 0.36, 1) 1.5s forwards;
+}
+
+.scroll-content-inner {
+  padding: 24px 28px;
+  text-align: center;
+}
+
+/* ─── Sceau de cire ────────────────────────────────────────── */
+
+.scroll-seal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 76px;
+  z-index: 10;
+  /* Apparait a 0.3s, puis disparait completement a 1.6s (apres le split) */
+  animation:
+    seal-appear 0.5s ease-out 0.3s both,
+    seal-hide 0.01s linear 1.7s forwards;
+}
+
+/* Moities du sceau */
+.scroll-seal-half--left,
+.scroll-seal-half--right {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--seal-color);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.scroll-seal-half--left {
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  animation: seal-split-left 0.4s ease-in 1.2s forwards;
+}
+
+.scroll-seal-half--right {
+  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  animation: seal-split-right 0.4s ease-in 1.2s forwards;
+}
+
+/* Ligne de craquement */
+.scroll-seal-crack {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  width: 2px;
+  height: 80%;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.6), transparent);
+  transform: translateX(-50%);
+  opacity: 0;
+  animation:
+    crack-appear 0.3s ease-in 1.0s forwards,
+    crack-disappear 0.3s ease-out 1.4s forwards;
+}
+
+/* Icone du sceau */
+.scroll-seal-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  z-index: 11;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  animation:
+    seal-icon-bounce 0.6s ease-out 0.6s,
+    seal-icon-fade 0.3s ease-out 1.2s forwards;
+}
+
+/* Eclat de particules au crack */
+.scroll-seal-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.6) 0%, transparent 70%);
+  animation: seal-burst 0.5s ease-out 1.2s forwards;
+}
+
+/* ─── Couleurs de sceau par type d'alerte ──────────────────── */
+
+.scroll-alert--follow     { --seal-color: radial-gradient(circle at 40% 35%, #FF6B6B, #CC3333); }
+.scroll-alert--sub        { --seal-color: radial-gradient(circle at 40% 35%, #FFD700, #B8922E); }
+.scroll-alert--resub      { --seal-color: radial-gradient(circle at 40% 35%, #FFD700, #B8922E); }
+.scroll-alert--gift_sub   { --seal-color: radial-gradient(circle at 40% 35%, #50C878, #2E8B57); }
+.scroll-alert--raid       { --seal-color: radial-gradient(circle at 40% 35%, #7C4DFF, #4A148C); }
+.scroll-alert--bits       { --seal-color: radial-gradient(circle at 40% 35%, #00B0FF, #1565C0); }
+.scroll-alert--hype_train { --seal-color: radial-gradient(circle at 40% 35%, #FF6D00, #BF360C); }
+.scroll-alert--first_word { --seal-color: radial-gradient(circle at 40% 35%, #E0E0E0, #9E9E9E); }
+.scroll-alert--dice       { --seal-color: radial-gradient(circle at 40% 35%, #69F0AE, #2E7D52); }
+
+/* ─── Typographie ──────────────────────────────────────────── */
+
+.scroll-title {
+  font-family: 'MedievalSharp', cursive;
+  font-size: 22px;
+  color: #3E2A08;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.scroll-viewer-name {
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #8B4513;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.scroll-subtitle {
+  font-family: 'IM Fell English', serif;
+  font-size: 16px;
+  font-style: italic;
+  color: #6B4E12;
+  margin-top: 4px;
+}
+
+/* Ruban pour les mois de resub */
+.scroll-ribbon {
+  display: inline-block;
+  background: linear-gradient(135deg, #D4A843, #B8922E);
+  color: #FFFFFF;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 14px;
+  border-radius: 10px;
+  margin-top: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Separateur decoratif ─────────────────────────────────── */
+
+.scroll-separator {
+  width: 60%;
+  height: 1px;
+  margin: 10px auto 6px;
+  background: linear-gradient(90deg, transparent, rgba(139, 105, 20, 0.4), transparent);
+}
+
+/* ─── Hype Train : bordure de feu ──────────────────────────── */
+
+.scroll-alert--hype_train .scroll-parchment {
+  border-color: #FF6D00;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(255, 109, 0, 0.4),
+    0 0 40px rgba(255, 109, 0, 0.15),
+    inset 0 0 30px rgba(139, 105, 20, 0.15);
+  animation: flame-glow 1s ease-in-out infinite;
+}
+
+.scroll-alert--hype_train .scroll-roll {
+  border-color: #BF360C;
+  background:
+    linear-gradient(180deg,
+      #FF8A00 0%,
+      #FF6D00 30%,
+      #E65100 60%,
+      #BF360C 80%,
+      #FF8A00 100%
+    );
+}
+
+/* ─── Raid : bordure violette renforcee ────────────────────── */
+
+.scroll-alert--raid .scroll-parchment {
+  border-color: #7C4DFF;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(124, 77, 255, 0.3),
+    inset 0 0 30px rgba(139, 105, 20, 0.15);
+}
+
+/* ═══ KEYFRAMES ═══════════════════════════════════════════════ */
+
+@keyframes scroll-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.85);
   }
-  
-  .alert-popup {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: rgba(0, 0, 0, 0.85);
-    border-radius: 16px;
-    padding: 16px 24px;
-    min-width: 300px;
-    border-left: 4px solid #b388ff;
-  
-    /* Animation entrée + sortie */
-    animation:
-      alert-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-      alert-exit 0.5s ease-in 4.5s forwards;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
-  
-  /* Couleur de bordure selon le type */
-  .alert-follow { border-left-color: #ff6b6b; }
-  .alert-sub    { border-left-color: #ffd700; }
-  .alert-raid   { border-left-color: #7c4dff; }
-  .alert-bits   { border-left-color: #00e5ff; }
-  .alert-dice   { border-left-color: #69f0ae; }
-  
-  @keyframes alert-enter {
-    from {
-      opacity: 0;
-      transform: translateY(-30px) scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+}
+
+@keyframes scroll-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
-  
-  @keyframes alert-exit {
-    from {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(-20px) scale(0.95);
-    }
+  to {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
   }
-  
-  .alert-icon {
-    font-size: 36px;
-    /* Petit bounce sur l'icône */
-    animation: icon-bounce 0.6s ease-out 0.3s;
+}
+
+@keyframes scroll-unroll {
+  from { max-height: 0; }
+  to   { max-height: 300px; }
+}
+
+@keyframes seal-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
   }
-  
-  @keyframes icon-bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.3); }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
-  
-  .alert-title {
-    color: #ffffff;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 18px;
-    font-weight: 700;
+}
+
+@keyframes seal-split-left {
+  from {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
   }
-  
-  .alert-message {
-    color: #b0b0b0;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 14px;
-    margin-top: 2px;
+  to {
+    transform: translateX(-20px) rotate(-15deg);
+    opacity: 0;
   }
+}
+
+@keyframes seal-split-right {
+  from {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(20px) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+@keyframes crack-appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes seal-icon-bounce {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.3); }
+}
+
+@keyframes seal-icon-fade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes seal-hide {
+  to { visibility: hidden; pointer-events: none; }
+}
+
+@keyframes crack-disappear {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes seal-burst {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+@keyframes flame-glow {
+  0%, 100% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      0 0 20px rgba(255, 109, 0, 0.4),
+      0 0 40px rgba(255, 109, 0, 0.15),
+      inset 0 0 30px rgba(139, 105, 20, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(255, 109, 0, 0.6),
+      0 0 60px rgba(255, 109, 0, 0.3),
+      inset 0 0 30px rgba(139, 105, 20, 0.15);
+  }
+}
