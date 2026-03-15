@@ -11,8 +11,6 @@
    7. 8.0-9.0s : disparition (fade out + slide up)
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
-
 /* ─── Container ────────────────────────────────────────────── */
 
 .alerts-page {
@@ -41,6 +39,20 @@
 
 .scroll-alert--major {
   max-width: 520px;
+}
+
+/* ─── Media layer (video/gif behind parchment) ──────────────── */
+
+.scroll-media {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  z-index: 0;
+  border-radius: 8px;
 }
 
 /* ─── Corps parchemin ──────────────────────────────────────── */
@@ -73,6 +85,7 @@
     0 8px 32px rgba(0, 0, 0, 0.6),
     0 0 12px rgba(180, 140, 60, 0.25),
     inset 0 0 30px rgba(139, 105, 20, 0.15);
+  z-index: 1;
 }
 
 .scroll-alert--major .scroll-parchment {
@@ -136,7 +149,6 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: var(--seal-color);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.5),
     inset 0 2px 4px rgba(255, 255, 255, 0.2),
@@ -196,18 +208,6 @@
   animation: seal-burst 0.5s ease-out 1.2s forwards;
 }
 
-/* ─── Couleurs de sceau par type d'alerte ──────────────────── */
-
-.scroll-alert--follow     { --seal-color: radial-gradient(circle at 40% 35%, #FF6B6B, #CC3333); }
-.scroll-alert--sub        { --seal-color: radial-gradient(circle at 40% 35%, #FFD700, #B8922E); }
-.scroll-alert--resub      { --seal-color: radial-gradient(circle at 40% 35%, #FFD700, #B8922E); }
-.scroll-alert--gift_sub   { --seal-color: radial-gradient(circle at 40% 35%, #50C878, #2E8B57); }
-.scroll-alert--raid       { --seal-color: radial-gradient(circle at 40% 35%, #7C4DFF, #4A148C); }
-.scroll-alert--bits       { --seal-color: radial-gradient(circle at 40% 35%, #00B0FF, #1565C0); }
-.scroll-alert--hype_train { --seal-color: radial-gradient(circle at 40% 35%, #FF6D00, #BF360C); }
-.scroll-alert--first_word { --seal-color: radial-gradient(circle at 40% 35%, #E0E0E0, #9E9E9E); }
-.scroll-alert--dice       { --seal-color: radial-gradient(circle at 40% 35%, #69F0AE, #2E7D52); }
-
 /* ─── Typographie ──────────────────────────────────────────── */
 
 .scroll-title {
@@ -258,40 +258,6 @@
   height: 1px;
   margin: 10px auto 6px;
   background: linear-gradient(90deg, transparent, rgba(139, 105, 20, 0.4), transparent);
-}
-
-/* ─── Hype Train : bordure de feu ──────────────────────────── */
-
-.scroll-alert--hype_train .scroll-parchment {
-  border-color: #FF6D00;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(255, 109, 0, 0.4),
-    0 0 40px rgba(255, 109, 0, 0.15),
-    inset 0 0 30px rgba(139, 105, 20, 0.15);
-  animation: flame-glow 1s ease-in-out infinite;
-}
-
-.scroll-alert--hype_train .scroll-roll {
-  border-color: #BF360C;
-  background:
-    linear-gradient(180deg,
-      #FF8A00 0%,
-      #FF6D00 30%,
-      #E65100 60%,
-      #BF360C 80%,
-      #FF8A00 100%
-    );
-}
-
-/* ─── Raid : bordure violette renforcee ────────────────────── */
-
-.scroll-alert--raid .scroll-parchment {
-  border-color: #7C4DFF;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.6),
-    0 0 15px rgba(124, 77, 255, 0.3),
-    inset 0 0 30px rgba(139, 105, 20, 0.15);
 }
 
 /* ═══ KEYFRAMES ═══════════════════════════════════════════════ */
@@ -391,19 +357,3 @@
   }
 }
 
-@keyframes flame-glow {
-  0%, 100% {
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.6),
-      0 0 20px rgba(255, 109, 0, 0.4),
-      0 0 40px rgba(255, 109, 0, 0.15),
-      inset 0 0 30px rgba(139, 105, 20, 0.15);
-  }
-  50% {
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.6),
-      0 0 30px rgba(255, 109, 0, 0.6),
-      0 0 60px rgba(255, 109, 0, 0.3),
-      inset 0 0 30px rgba(139, 105, 20, 0.15);
-  }
-}
