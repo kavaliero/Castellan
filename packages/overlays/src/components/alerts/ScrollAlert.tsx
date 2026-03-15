@@ -1,75 +1,69 @@
 import "./alerts.css";
+import { lighten } from "../../utils/lighten";
 
-/**
- * Parchemin Scelle — alerte en forme de parchemin medieval.
- *
- * Le composant est purement presentationnel. Toute l'animation
- * est geree en CSS via les keyframes dans alerts.css.
- * Le `key` dans AlertsPage force le re-montage a chaque alerte,
- * ce qui relance toute la sequence d'animation.
- */
-
-export type ScrollAlertType =
-    | 'follow' | 'sub' | 'resub' | 'gift_sub'
-    | 'raid' | 'bits' | 'hype_train' | 'first_word' | 'dice';
-
-export type ScrollAlertVariant = 'minor' | 'major';
+export type ScrollAlertVariant = "minor" | "major";
 
 export interface ScrollAlertData {
-    type: ScrollAlertType;
-    variant: ScrollAlertVariant;
-    icon: string;
-    title: string;
-    viewerName: string;
-    subtitle?: string;
-    ribbon?: string;
+  variant: ScrollAlertVariant;
+  icon: string;
+  sealColor: string;
+  title: string;
+  viewerName: string | null;
+  subtitle: string | null;
+  ribbon: string | null;
+  mediaUrl: string | null;
+  mediaType: "video" | "gif" | null;
 }
 
 interface ScrollAlertProps {
-    alert: ScrollAlertData;
+  alert: ScrollAlertData;
 }
 
 export function ScrollAlert({ alert }: ScrollAlertProps) {
-    const wrapperClass = [
-        'scroll-alert',
-        `scroll-alert--${alert.type}`,
-        `scroll-alert--${alert.variant}`,
-    ].join(' ');
+  const sealGradient = `radial-gradient(circle at 40% 35%, ${lighten(alert.sealColor, 20)}, ${alert.sealColor})`;
 
-    return (
-        <div className={wrapperClass}>
-            {/* Sceau de cire */}
-            <div className="scroll-seal">
-                <div className="scroll-seal-half--left" />
-                <div className="scroll-seal-half--right" />
-                <div className="scroll-seal-crack" />
-                <div className="scroll-seal-icon">{alert.icon}</div>
-                <div className="scroll-seal-burst" />
-            </div>
+  // Keep original CSS class pattern: scroll-alert--{variant}
+  const wrapperClass = `scroll-alert scroll-alert--${alert.variant}`;
 
-            {/* Corps du parchemin */}
-            <div className="scroll-parchment">
-                {/* Bord roule haut */}
-                <div className="scroll-roll" />
+  return (
+    <div className={wrapperClass}>
+      {/* Media layer behind parchment */}
+      {alert.mediaUrl && alert.mediaType === "video" && (
+        <video className="scroll-media" src={alert.mediaUrl} autoPlay muted playsInline />
+      )}
+      {alert.mediaUrl && alert.mediaType === "gif" && (
+        <img className="scroll-media" src={alert.mediaUrl} alt="" />
+      )}
 
-                {/* Contenu (se deroule via max-height) */}
-                <div className="scroll-content">
-                    <div className="scroll-content-inner">
-                        <div className="scroll-title">{alert.title}</div>
-                        <div className="scroll-separator" />
-                        <div className="scroll-viewer-name">{alert.viewerName}</div>
-                        {alert.subtitle && (
-                            <div className="scroll-subtitle">{alert.subtitle}</div>
-                        )}
-                        {alert.ribbon && (
-                            <div className="scroll-ribbon">{alert.ribbon}</div>
-                        )}
-                    </div>
-                </div>
+      {/* Sceau de cire */}
+      <div className="scroll-seal">
+        <div className="scroll-seal-half--left" style={{ background: sealGradient }} />
+        <div className="scroll-seal-half--right" style={{ background: sealGradient }} />
+        <div className="scroll-seal-crack" />
+        <div className="scroll-seal-icon">{alert.icon}</div>
+        <div className="scroll-seal-burst" />
+      </div>
 
-                {/* Bord roule bas */}
-                <div className="scroll-roll" />
-            </div>
+      {/* Corps du parchemin */}
+      <div className="scroll-parchment">
+        <div className="scroll-roll" />
+        <div className="scroll-content">
+          <div className="scroll-content-inner">
+            <div className="scroll-title">{alert.title}</div>
+            <div className="scroll-separator" />
+            {alert.viewerName && (
+              <div className="scroll-viewer-name">{alert.viewerName}</div>
+            )}
+            {alert.subtitle && (
+              <div className="scroll-subtitle">{alert.subtitle}</div>
+            )}
+            {alert.ribbon && (
+              <div className="scroll-ribbon">{alert.ribbon}</div>
+            )}
+          </div>
         </div>
-    );
+        <div className="scroll-roll" />
+      </div>
+    </div>
+  );
 }
