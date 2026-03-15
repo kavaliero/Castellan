@@ -114,6 +114,34 @@ app.put("/api/alerts/config/:type", (req, res) => {
 });
 
 // ===========================
+// ALERTS TEST (admin dashboard)
+// ===========================
+
+const TEST_PAYLOADS: Record<string, object> = {
+  follow:     { type: "alert:follow", payload: { viewer: { displayName: "TestViewer" } } },
+  sub:        { type: "alert:sub", payload: { viewer: { displayName: "TestViewer" }, tier: 1, months: 1 } },
+  resub:      { type: "alert:sub", payload: { viewer: { displayName: "TestViewer" }, tier: 1, months: 6 } },
+  gift_sub:   { type: "alert:gift_sub", payload: { viewer: { displayName: "TestViewer" }, recipientName: "LuckyViewer", tier: 1, totalGifted: 5, anonymous: false } },
+  raid:       { type: "alert:raid", payload: { fromChannel: "TestRaider", viewers: 42, game: "Just Chatting" } },
+  bits:       { type: "alert:bits", payload: { viewer: { displayName: "TestViewer" }, amount: 100 } },
+  hype_train: { type: "alert:hype_train", payload: { level: 2, totalPoints: 5000, progress: 75 } },
+  first_word: { type: "alert:first_word", payload: { viewer: { displayName: "TestViewer" } } },
+  dice:       { type: "alert:dice", payload: { viewer: { displayName: "TestViewer" }, faces: 20, result: 17 } },
+  channel_point_redemption: { type: "alert:channel_point_redemption", payload: { viewer: { displayName: "TestViewer" }, rewardName: "Test Reward", rewardCost: 500 } },
+};
+
+app.post("/api/alerts/test/:type", (req, res) => {
+  const testEvent = TEST_PAYLOADS[req.params.type];
+  if (!testEvent) {
+    res.status(404).json({ ok: false, error: "Unknown alert type" });
+    return;
+  }
+  broadcast(testEvent as any);
+  console.log(`[Alerts] 🧪 Test alert: ${req.params.type}`);
+  res.json({ ok: true, type: req.params.type });
+});
+
+// ===========================
 // CLIPS (pour la scène pause)
 // StreamerBot récupère les clips via l'API Twitch
 // et les POST ici pour que l'overlay /pause les joue
