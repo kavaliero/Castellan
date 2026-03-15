@@ -146,6 +146,9 @@ export interface IncomingEventData {
 } | {
     type: 'stream:viewers';
     payload: StreamViewersPayload;
+} | {
+    type: 'alerts:config';
+    payload: AlertsConfig;
 }
 
 export interface ChatMessagePayload {
@@ -301,8 +304,9 @@ export interface CreditsPayload {
     topChatters?: Array<{ viewer: ViewerInfo, messageCount: number }>;
     diceRolls?: Array<{ viewer: ViewerInfo, rollCount: number }>;
     topBitsDonator?: Array<{ viewer: ViewerInfo, amount: number }>;
-    channelPointUsed?: Array<{ viewer: ViewerInfo, amount: number }>;    
+    channelPointUsed?: Array<{ viewer: ViewerInfo, amount: number }>;
     lurkers?: ViewerInfo[];
+    allViewers?: ViewerInfo[];
     firstMessage?: ViewerInfo;
     stats: {
         totalMessages: number;
@@ -313,5 +317,43 @@ export interface CreditsPayload {
         topChannelPointUsed?: { viewer: ViewerInfo, amount: number };
         longestWatchSeries?: { viewer: ViewerInfo, duration: number };
     };
+}
+
+// ---- Alert Config Types ----
+
+export interface AlertSoundConfig {
+  enabled: boolean;
+  file: string | null;
+  volume: number;
+}
+
+export interface AlertMediaConfig {
+  enabled: boolean;
+  file: string | null;
+  type: 'video' | 'gif' | null;
+}
+
+export interface AlertTypeConfig {
+  enabled: boolean;
+  variant: 'minor' | 'major';
+  icon: string;
+  sealColor: string;
+  title: string;
+  subtitle: string | null;
+  viewerName: string | null;
+  ribbon: string | null;
+  parchmentDuration: number;
+  sound: AlertSoundConfig;
+  media: AlertMediaConfig;
+}
+
+export interface AlertGlobalConfig {
+  defaultParchmentDuration: number;
+  defaultVolume: number;
+}
+
+export interface AlertsConfig {
+  global: AlertGlobalConfig;
+  alerts: Record<string, AlertTypeConfig>;
 }
 
