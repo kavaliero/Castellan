@@ -1,193 +1,188 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useSound } from "../hooks/useSound";
 import { ScrollAlert } from "../components/alerts/ScrollAlert";
-import type { ScrollAlertType, ScrollAlertVariant } from "../components/alerts/ScrollAlert";
-import type { WSEvent } from "@castellan/shared";
+import { resolveTemplate } from "../utils/resolveTemplate";
+import type { ScrollAlertData } from "../components/alerts/ScrollAlert";
+import type { WSEvent, AlertsConfig } from "@castellan/shared";
 
-/**
- * Page Alerts — gère la FILE d'attente des alertes "Parchemin Scellé".
- *
- * Chaque alerte est un parchemin avec un sceau de cire coloré.
- * L'animation complète dure ~8s (apparition, crack du sceau,
- * déroulement, pause lecture, disparition).
- */
+const MEDIA_BASE_URL = "http://localhost:3001/media/alerts/videos";
 
-interface AlertItem {
-    id: string;
-    type: ScrollAlertType;
-    variant: ScrollAlertVariant;
-    icon: string;
-    title: string;
-    viewerName: string;
-    subtitle?: string;
-    ribbon?: string;
-    sound: string;
+interface QueuedAlert {
+  id: string;
+  data: ScrollAlertData;
+  soundFile: string | null;
+  soundVolume: number;
+  duration: number;
 }
 
-// Durée d'affichage d'une alerte (en ms)
-// Doit correspondre à la durée totale de l'animation CSS (~9.5s)
-const ALERT_DURATION = 9500;
+/**
+ * Extract template variables from a WS alert event payload.
+ * Maps spec variable names to actual payload field names.
+ */
+function extractVariables(event: WSEvent): Record<string, string | number | undefined> {
+  const vars: Record<string, string | number | undefined> = {};
+
+  if ("payload" in event) {
+    const p = event.payload as any;
+
+    // viewer — most alert types have viewer.displayName, raid has fromChannel
+    if (p.viewer?.displayName) vars.viewer = p.viewer.displayName;
+    if (p.fromChannel) vars.viewer = p.fromChannel;
+
+    // amounts
+    if (p.viewers !== undefined) vars.amount = p.viewers;
+    if (p.amount !== undefined) vars.amount = p.amount;
+
+    // sub fields
+    if (p.tier !== undefined) vars.tier = p.tier;
+    if (p.months !== undefined) vars.months = p.months;
+    if (p.recipientName) vars.recipient = p.recipientName;
+    if (p.totalGifted !== undefined) vars.totalGifted = p.totalGifted;
+
+    // hype train
+    if (p.level !== undefined) vars.level = p.level;
+    if (p.totalPoints !== undefined) vars.totalPoints = p.totalPoints;
+    if (p.progress !== undefined) vars.progress = p.progress;
+
+    // dice
+    if (p.faces !== undefined) vars.faces = p.faces;
+    if (p.result !== undefined) vars.result = p.result;
+
+    // channel points
+    if (p.rewardName) vars.rewardName = p.rewardName;
+    if (p.rewardCost !== undefined) vars.rewardCost = p.rewardCost;
+  }
+
+  return vars;
+}
+
+/**
+ * Map WSEvent type to config key. Handles resub logic.
+ */
+function getConfigKey(event: WSEvent): string | null {
+  switch (event.type) {
+    case "alert:follow": return "follow";
+    case "alert:sub": {
+      const p = event.payload as any;
+      return p.months > 1 ? "resub" : "sub";
+    }
+    case "alert:gift_sub": return "gift_sub";
+    case "alert:raid": return "raid";
+    case "alert:bits": return "bits";
+    case "alert:hype_train": return "hype_train";
+    case "alert:first_word": return "first_word";
+    case "alert:dice": return "dice";
+    case "alert:channel_point_redemption": return "channel_point_redemption";
+    default: return null;
+  }
+}
 
 export function AlertsPage() {
-    const [currentAlert, setCurrentAlert] = useState<AlertItem | null>(null);
-    const queueRef = useRef<AlertItem[]>([]);
-    const isShowingRef = useRef(false);
-    const { playSound } = useSound();
+  const [currentAlert, setCurrentAlert] = useState<QueuedAlert | null>(null);
+  const queueRef = useRef<QueuedAlert[]>([]);
+  const isShowingRef = useRef(false);
+  const configRef = useRef<AlertsConfig | null>(null);
+  const mediaDurationsRef = useRef<Map<string, number>>(new Map());
 
-    const showNext = useCallback(() => {
-        if (queueRef.current.length === 0) {
-            isShowingRef.current = false;
-            setCurrentAlert(null);
-            return;
+  const { playSound, preloadFromConfig } = useSound();
+
+  const showNext = useCallback(() => {
+    const next = queueRef.current.shift();
+    if (!next) {
+      setCurrentAlert(null);
+      isShowingRef.current = false;
+      return;
+    }
+
+    isShowingRef.current = true;
+    setCurrentAlert(next);
+    playSound(next.soundFile, next.soundVolume);
+
+    setTimeout(() => showNext(), next.duration);
+  }, [playSound]);
+
+  const enqueueAlert = useCallback((alert: QueuedAlert) => {
+    queueRef.current.push(alert);
+    if (!isShowingRef.current) {
+      showNext();
+    }
+  }, [showNext]);
+
+  const handleEvent = useCallback((event: WSEvent) => {
+    // Handle config updates
+    if (event.type === "alerts:config") {
+      configRef.current = event.payload;
+      preloadFromConfig(event.payload);
+
+      // Preload video metadata to get durations
+      for (const [type, alertCfg] of Object.entries(event.payload.alerts)) {
+        if (alertCfg.media.enabled && alertCfg.media.file && alertCfg.media.type === "video") {
+          const video = document.createElement("video");
+          video.preload = "metadata";
+          video.src = `${MEDIA_BASE_URL}/${alertCfg.media.file}`;
+          video.onloadedmetadata = () => {
+            mediaDurationsRef.current.set(type, video.duration * 1000);
+          };
         }
+      }
+      return;
+    }
 
-        isShowingRef.current = true;
-        const next = queueRef.current.shift()!;
-        setCurrentAlert(next);
-        playSound(next.sound);
+    // Process alert events
+    const config = configRef.current;
+    if (!config) return;
 
-        setTimeout(() => {
-            showNext();
-        }, ALERT_DURATION);
-    }, [playSound]);
+    const configKey = getConfigKey(event);
+    if (!configKey) return;
 
-    const enqueueAlert = useCallback(
-        (alert: AlertItem) => {
-            queueRef.current.push(alert);
-            if (!isShowingRef.current) {
-                showNext();
-            }
-        },
-        [showNext]
-    );
+    const alertCfg = config.alerts[configKey];
+    if (!alertCfg || !alertCfg.enabled) return;
 
-    const handleEvent = useCallback(
-        (event: WSEvent) => {
-            switch (event.type) {
-                case "alert:follow":
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "follow",
-                        variant: "minor",
-                        icon: "⚔️",
-                        title: "Un nouveau chevalier rejoint La Kavalry !",
-                        viewerName: event.payload.viewer.displayName,
-                        sound: "follow",
-                    });
-                    break;
+    const vars = extractVariables(event);
 
-                case "alert:sub": {
-                    const isResub = event.payload.months > 1;
-                    const tierName = event.payload.tier === 3 ? "Seigneur"
-                                   : event.payload.tier === 2 ? "Chevalier"
-                                   : "Écuyer";
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: isResub ? "resub" : "sub",
-                        variant: "minor",
-                        icon: "👑",
-                        title: isResub ? "Renouvelle son serment !" : "Serment d'allégeance !",
-                        viewerName: event.payload.viewer.displayName,
-                        subtitle: `Rang : ${tierName}`,
-                        ribbon: isResub ? `${event.payload.months} lunes` : undefined,
-                        sound: "sub",
-                    });
-                    break;
-                }
+    // Resolve templates
+    const title = resolveTemplate(alertCfg.title, vars);
+    const subtitle = alertCfg.subtitle ? resolveTemplate(alertCfg.subtitle, vars) : null;
+    const viewerName = alertCfg.viewerName ? resolveTemplate(alertCfg.viewerName, vars) : null;
+    const ribbon = alertCfg.ribbon ? resolveTemplate(alertCfg.ribbon, vars) : null;
 
-                case "alert:gift_sub": {
-                    const gifterName = event.payload.anonymous
-                        ? "Un bienfaiteur anonyme"
-                        : event.payload.viewer.displayName;
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "gift_sub",
-                        variant: "minor",
-                        icon: "🎁",
-                        title: "Don d'allégeance !",
-                        viewerName: gifterName,
-                        subtitle: `offre un sub à ${event.payload.recipientName}`,
-                        sound: "sub",
-                    });
-                    break;
-                }
+    // Media URL
+    let mediaUrl: string | null = null;
+    if (alertCfg.media.enabled && alertCfg.media.file) {
+      mediaUrl = `${MEDIA_BASE_URL}/${alertCfg.media.file}`;
+    }
 
-                case "alert:raid":
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "raid",
-                        variant: "major",
-                        icon: "🏰",
-                        title: "Les portes sont assiégées !",
-                        viewerName: event.payload.fromChannel,
-                        subtitle: `${event.payload.viewers} chevaliers débarquent !`,
-                        sound: "raid",
-                    });
-                    break;
+    // Duration: max of parchment and media
+    const mediaDuration = mediaDurationsRef.current.get(configKey) ?? 0;
+    const duration = Math.max(alertCfg.parchmentDuration, mediaDuration);
 
-                case "alert:bits":
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "bits",
-                        variant: "minor",
-                        icon: "💎",
-                        title: "Tribut au royaume !",
-                        viewerName: event.payload.viewer.displayName,
-                        subtitle: `${event.payload.amount} gemmes`,
-                        sound: "bits",
-                    });
-                    break;
+    const queued: QueuedAlert = {
+      id: crypto.randomUUID(),
+      data: {
+        variant: alertCfg.variant,
+        icon: alertCfg.icon,
+        sealColor: alertCfg.sealColor,
+        title,
+        viewerName,
+        subtitle,
+        ribbon,
+        mediaUrl,
+        mediaType: alertCfg.media.type,
+      },
+      soundFile: alertCfg.sound.enabled ? alertCfg.sound.file : null,
+      soundVolume: alertCfg.sound.volume,
+      duration,
+    };
 
-                case "alert:hype_train":
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "hype_train",
-                        variant: "major",
-                        icon: "🔥",
-                        title: `Hype Train — Niveau ${event.payload.level} !`,
-                        viewerName: "Le royaume s'enflamme !",
-                        subtitle: `${event.payload.totalPoints} points`,
-                        sound: "raid",
-                    });
-                    break;
+    enqueueAlert(queued);
+  }, [enqueueAlert, preloadFromConfig]);
 
-                case "alert:first_word":
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "first_word",
-                        variant: "minor",
-                        icon: "✒",
-                        title: "Première parole au conseil !",
-                        viewerName: event.payload.viewer.displayName,
-                        sound: "follow",
-                    });
-                    break;
+  useWebSocket(handleEvent);
 
-                case "alert:dice":
-                    enqueueAlert({
-                        id: crypto.randomUUID(),
-                        type: "dice",
-                        variant: "minor",
-                        icon: "🎲",
-                        title: `Lancer de d${event.payload.faces}`,
-                        viewerName: event.payload.viewer.displayName,
-                        subtitle: `Résultat : ${event.payload.result}`,
-                        sound: "dice",
-                    });
-                    break;
-            }
-        },
-        [enqueueAlert]
-    );
-
-    useWebSocket(handleEvent);
-
-    return (
-        <div className="alerts-page">
-            {currentAlert && (
-                <ScrollAlert key={currentAlert.id} alert={currentAlert} />
-            )}
-        </div>
-    );
+  return (
+    <div className="alerts-page">
+      {currentAlert && <ScrollAlert key={currentAlert.id} alert={currentAlert.data} />}
+    </div>
+  );
 }
