@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import { initWebSocket, broadcast, getClientCount } from "./ws/broadcaster";
+import { initAlerts, getAlertsConfig, updateAlertConfig, updateGlobalConfig } from "./services/alerts.service";
 import { connectToStreamerBot, getCurrentStreamId, setCurrentStreamId, getBroadcasterId, setBroadcasterId } from "./services/streamerbot.service";
 import { buildCredits } from "./services/credits.service";
 import { initGoals, getGoalsState, updateGoalsConfig, broadcastAllGoals } from "./services/goals.service";
@@ -10,9 +13,11 @@ import { prisma } from "./db/client";
 import { findOrCreateViewer, findOrCreateSession } from "./services/viewer.service";
 import type { IncomingEvent, ClipsSyncPayload } from "@castellan/shared";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/media', express.static(path.resolve(__dirname, '../media')));
 
 // ===========================
 // HEALTH CHECK
@@ -86,6 +91,26 @@ app.post("/api/goals/config", (req, res) => {
   updateGoalsConfig({ followers, subscribers });
   console.log("[Goals] 🎯 Config mise à jour:", JSON.stringify(req.body));
   res.json({ ok: true, goals: getGoalsState() });
+});
+
+// ===========================
+// ALERTS CONFIG API
+// ===========================
+
+app.get("/api/alerts/config", (_req, res) => {
+  res.json(getAlertsConfig());
+});
+
+app.put("/api/alerts/config/global", (req, res) => {
+  const error = updateGlobalConfig(req.body);
+  if (error) return res.status(400).json({ error });
+  res.json(getAlertsConfig());
+});
+
+app.put("/api/alerts/config/:type", (req, res) => {
+  const error = updateAlertConfig(req.params.type, req.body);
+  if (error) return res.status(400).json({ error });
+  res.json(getAlertsConfig());
 });
 
 // ===========================
@@ -167,6 +192,15 @@ app.get("/api/clips", (_req, res) => {
     syncedAt: getClipsSyncedAt(),
     clips,
   });
+});
+
+// ===========================
+// CHAT CLEAR (modérateurs / StreamerBot)
+// ===========================
+app.post("/api/chat/clear", (_req, res) => {
+  broadcast({ type: "chat:clear" });
+  console.log("[Chat] 🧹 Chat clear envoyé aux overlays");
+  res.json({ ok: true });
 });
 
 // ===========================
@@ -294,13 +328,33 @@ app.post("/api/event", async (req, res) => {
       }
 
       if (event.type === "dice" && event.data) {
+        const faces = event.data.faces ?? 20;
+        const result = event.data.result ?? 1;
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "dice", data: JSON.stringify({ faces, result }) },
+        });
         broadcast({
           type: "alert:dice",
-          payload: { viewer: event.viewer, faces: event.data.faces ?? 20, result: event.data.result ?? 1 },
+          payload: { viewer: event.viewer, faces, result },
+        });
+      }
+
+      if (event.type === "channel_point_redemption" && event.data) {
+        const rewardName = event.data.rewardName ?? "Inconnu";
+        const rewardCost = event.data.rewardCost ?? 0;
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "channel_point_redemption", data: JSON.stringify({ rewardName, rewardCost }) },
+        });
+        broadcast({
+          type: "alert:channel_point_redemption",
+          payload: { viewer: event.viewer, rewardName, rewardCost },
         });
       }
 
       if (event.type === "hype_train" && event.data) {
+        await prisma.streamEvent.create({
+          data: { streamId, viewerId: dbViewer.id, type: "hype_train", data: JSON.stringify({ level: event.data.level, totalPoints: event.data.totalPoints, progress: event.data.progress }) },
+        });
         broadcast({
           type: "alert:hype_train",
           payload: {
@@ -313,6 +367,17 @@ app.post("/api/event", async (req, res) => {
 
       if (event.type === "first_word") {
         broadcast({ type: "alert:first_word", payload: { viewer: event.viewer } });
+      }
+
+      if (event.type === "join") {
+        await findOrCreateSession(dbViewer.id, streamId);
+      }
+
+      if (event.type === "leave") {
+        await prisma.viewerSession.updateMany({
+          where: { viewerId: dbViewer.id, streamId, isActive: true },
+          data: { isActive: false },
+        });
       }
     }
 
@@ -328,6 +393,7 @@ app.post("/api/event", async (req, res) => {
 // ===========================
 async function start() {
   initGoals();
+  initAlerts();
   initStreamState();
   initWebSocket(3002);
 

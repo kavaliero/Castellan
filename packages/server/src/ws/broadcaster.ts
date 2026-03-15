@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { WSEvent } from "@castellan/shared";
 import { getGoalsInitPayload, getGoalsState } from "../services/goals.service";
 import { getStreamInfoPayload, getStreamViewersPayload } from "../services/stream.service";
+import { getAlertsConfig } from "../services/alerts.service";
 
 /**
  * Le Broadcaster gère toutes les connexions WebSocket.
@@ -72,6 +73,10 @@ export function initWebSocket(port: number = 3002): WebSocketServer {
         payload: { displayName: goalsState.lastSub },
       }));
     }
+
+    // Send alerts config
+    const alertsConfig = getAlertsConfig();
+    socket.send(JSON.stringify({ type: "alerts:config", payload: alertsConfig }));
 
     // Envoyer l'état du stream en cours (pour l'overlay /frame)
     const streamInfo = getStreamInfoPayload();
