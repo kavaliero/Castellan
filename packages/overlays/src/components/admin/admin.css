@@ -118,9 +118,58 @@
   transition: border-color 0.15s;
 }
 
-.admin-card--expanded {
-  border-color: #a78bfa;
-  grid-column: span 2;
+/* ─── Modal ──────────────────────────────────────────────────── */
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.admin-modal {
+  background: #1e1e32;
+  border: 1px solid #2d2d44;
+  border-radius: 10px;
+  width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2d2d44;
+  flex-shrink: 0;
+}
+
+.admin-modal-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.admin-modal-close:hover {
+  color: #e0e0e0;
+  background: #2d2d44;
+}
+
+.admin-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .admin-card-header {
@@ -157,15 +206,6 @@
   gap: 8px;
 }
 
-.admin-chevron {
-  color: #888;
-  font-size: 12px;
-  transition: transform 0.15s;
-}
-
-.admin-chevron--open {
-  transform: rotate(180deg);
-}
 
 /* ─── Badge ON/OFF ───────────────────────────────────────────── */
 
