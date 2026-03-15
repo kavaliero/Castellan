@@ -7,6 +7,7 @@ import { PausePage } from "./pages/PausePage";
 import { FramePage } from "./pages/FramePage";
 import { GameFramePage } from "./pages/GameFramePage";
 import { LiveCodinfFramePage } from "./pages/LiveCodingFramePage";
+import { AdminPage } from "./pages/AdminPage";
 
 /**
  * Le Router définit quelle page s'affiche selon l'URL.
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/overlay/frame" element={<FramePage />} />
         <Route path="/overlay/game-frame" element={<GameFramePage />} />
         <Route path="/overlay/live-coding-frame" element={<LiveCodinfFramePage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );
