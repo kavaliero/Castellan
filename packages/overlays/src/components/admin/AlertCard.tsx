@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { apiPut, apiPost } from "../../hooks/useAdminApi";
 import type { AlertTypeConfig } from "@castellan/shared";
 
@@ -28,6 +28,9 @@ export function AlertCard({ type, config, isExpanded, onToggle, onUpdate }: Aler
   const [form, setForm] = useState(config);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [soundUploaded, setSoundUploaded] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset form when config changes externally (WS update) or on expand
   useEffect(() => {
@@ -63,6 +66,24 @@ export function AlertCard({ type, config, isExpanded, onToggle, onUpdate }: Aler
   async function handleTest() {
     const res = await apiPost(`/api/alerts/test/${type}`);
     if (res.error) setError(res.error);
+  }
+
+  async function handleSoundUpload(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const resp = await fetch(`http://localhost:3001/api/upload/sound/${type}`, {
+        method: "POST",
+        body: fd,
+      });
+      if (resp.ok) {
+        setSoundUploaded(true);
+        setTimeout(() => setSoundUploaded(false), 2000);
+      }
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -210,14 +231,33 @@ export function AlertCard({ type, config, isExpanded, onToggle, onUpdate }: Aler
                   </div>
                 </div>
 
-                <div className="admin-field">
-                  <label className="admin-label">Sound File</label>
-                  <input
-                    className="admin-input"
-                    value={form.sound.file ?? ""}
-                    onChange={e => updateSound({ file: e.target.value || null })}
-                    placeholder="e.g. follow.mp3"
-                  />
+                {/* Upload button */}
+                <div className="admin-field-row">
+                  <label className="admin-label">Fichier</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? "Upload..." : "Remplacer le son"}
+                    </button>
+                    {soundUploaded && (
+                      <span style={{ color: "#4ade80", fontSize: 13 }}>✓ Uploadé</span>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".mp3"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleSoundUpload(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Sound Volume */}
