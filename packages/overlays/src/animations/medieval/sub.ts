@@ -176,6 +176,7 @@ export const subModule: AnimationModule = {
 
     // 4. Lightning crackles along blade (1.05s, repeating)
     const lightningBolts: HTMLElement[] = [];
+    const lightningTweens: gsap.core.Tween[] = [];
     tl.call(() => {
       const swordRect = sword.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
@@ -185,12 +186,13 @@ export const subModule: AnimationModule = {
       for (let i = 0; i < 6; i++) {
         const bolt = createLightning(container, sx + (Math.random() - 0.5) * 20, sy + Math.random() * 80);
         lightningBolts.push(bolt);
-        gsap.to(bolt, {
+        const tween = gsap.to(bolt, {
           opacity: 0.9, duration: 0.1,
           repeat: -1, yoyo: true,
           delay: Math.random() * 0.5,
           repeatDelay: 0.1 + Math.random() * 0.3,
         });
+        lightningTweens.push(tween);
       }
     }, [], 1.05);
 
@@ -203,7 +205,7 @@ export const subModule: AnimationModule = {
     }
 
     // Store dynamic elements for cleanup
-    (container as any).__animDynamic = { sword, flash, shockwave, lightningBolts };
+    (container as any).__animDynamic = { sword, flash, shockwave, lightningBolts, lightningTweens };
 
     return tl;
   },
@@ -213,28 +215,35 @@ export const subModule: AnimationModule = {
     const dynamic = (container as any).__animDynamic as {
       sword: HTMLElement; flash: HTMLElement;
       shockwave: HTMLElement; lightningBolts: HTMLElement[];
+      lightningTweens: gsap.core.Tween[];
     } | undefined;
 
-    // Disintegrate sword into particles
-    if (dynamic?.sword) {
-      const swordRect = dynamic.sword.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      const cx = swordRect.left - containerRect.left + swordRect.width / 2;
-      const cy = swordRect.top - containerRect.top + swordRect.height / 2;
+    // Kill standalone infinite lightning tweens to prevent memory leak
+    dynamic?.lightningTweens?.forEach(t => t.kill());
 
+    if (dynamic?.sword) {
       tl.to(dynamic.sword, { opacity: 0, duration: 0.3 }, 0);
 
-      const particles = createDisintegrationParticles(container, cx, cy, 25);
-      particles.forEach((p, i) => {
-        tl.to(p, {
-          y: -(50 + Math.random() * 100),
-          x: (Math.random() - 0.5) * 80,
-          opacity: 0,
-          duration: 0.6 + Math.random() * 0.3,
-          ease: "power2.out",
-          onComplete: () => p.remove(),
-        }, i * 0.02);
-      });
+      // Defer particle creation to play time so getBoundingClientRect is accurate
+      tl.call(() => {
+        const swordRect = dynamic.sword.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const cx = swordRect.left - containerRect.left + swordRect.width / 2;
+        const cy = swordRect.top - containerRect.top + swordRect.height / 2;
+
+        const particles = createDisintegrationParticles(container, cx, cy, 25);
+        particles.forEach((p, i) => {
+          gsap.to(p, {
+            y: -(50 + Math.random() * 100),
+            x: (Math.random() - 0.5) * 80,
+            opacity: 0,
+            duration: 0.6 + Math.random() * 0.3,
+            delay: i * 0.02,
+            ease: "power2.out",
+            onComplete: () => p.remove(),
+          });
+        });
+      }, [], 0.1);
     }
 
     // Fade everything

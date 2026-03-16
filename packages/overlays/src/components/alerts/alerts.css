@@ -1,14 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    PARCHEMIN SCELLE — Systeme d'alertes medieval
 
-   Animation sequencee (~9.5s total) :
-   1. 0-0.8s   : parchemin apparait (slide down + scale)
-   2. 0.3-0.8s : sceau apparait au centre
-   3. 1.0-1.3s : ligne de craquement visible
-   4. 1.2-1.6s : sceau se split + icone disparait
-   5. 1.5-3.5s : contenu se deroule (2s, plus lent)
-   6. 3.5-7.5s : pause lecture (~4s)
-   7. 8.0-9.0s : disparition (fade out + slide up)
+   Animations gerees par GSAP (voir packages/overlays/src/animations/).
+   Ce fichier ne contient que le layout et le styling visuel.
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Container ────────────────────────────────────────────── */

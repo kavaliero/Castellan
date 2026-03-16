@@ -62,11 +62,12 @@ export function ScrollAlert({ alert, duration, onDone }: ScrollAlertProps) {
     const pauseMs = Math.max(0, duration - (enterDuration * 1000) - (exitDuration * 1000));
 
     // Master timeline: enter → pause → exit → onDone
+    let pauseTimer: ReturnType<typeof setTimeout>;
     const master = gsap.timeline();
     master.add(enterTl);
     master.call(() => {
       // After pause, play exit
-      setTimeout(() => {
+      pauseTimer = setTimeout(() => {
         exitTl.play();
         exitTl.eventCallback("onComplete", onDone);
       }, pauseMs);
@@ -75,10 +76,12 @@ export function ScrollAlert({ alert, duration, onDone }: ScrollAlertProps) {
     timelineRef.current = master;
 
     return () => {
+      clearTimeout(pauseTimer);
       master.kill();
       exitTl.kill();
     };
-  }, []); // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount, component is keyed by alert ID
+  }, []);
 
   return (
     <div ref={containerRef} className={wrapperClass}>
