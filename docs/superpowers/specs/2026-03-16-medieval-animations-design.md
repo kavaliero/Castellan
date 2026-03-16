@@ -192,7 +192,7 @@ The `default.ts` module reproduces the current CSS animation sequence in GSAP:
 4. Pause
 5. Fade out and slide up (1s)
 
-This ensures the 8 types without custom animations (resub, gift_sub, hype_train, first_word, dice, channel_point_redemption) continue to work identically. Note: `message`, `join`, `leave` are not alert types — they don't trigger ScrollAlert.
+This ensures the 6 types without custom animations (resub, gift_sub, hype_train, first_word, dice, channel_point_redemption) continue to work identically. Note: `message`, `join`, `leave` are not alert types — they don't trigger ScrollAlert.
 
 ## Admin Sound Upload Simplification
 
