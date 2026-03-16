@@ -1,9 +1,13 @@
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
 import "./alerts.css";
 import { lighten } from "../../utils/lighten";
+import { getAnimationModule } from "../../animations/registry";
 
 export type ScrollAlertVariant = "minor" | "major";
 
 export interface ScrollAlertData {
+  type: string;
   variant: ScrollAlertVariant;
   icon: string;
   sealColor: string;
@@ -17,16 +21,67 @@ export interface ScrollAlertData {
 
 interface ScrollAlertProps {
   alert: ScrollAlertData;
+  duration: number;
+  onDone: () => void;
 }
 
-export function ScrollAlert({ alert }: ScrollAlertProps) {
-  const sealGradient = `radial-gradient(circle at 40% 35%, ${lighten(alert.sealColor, 20)}, ${alert.sealColor})`;
+export function ScrollAlert({ alert, duration, onDone }: ScrollAlertProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
-  // Keep original CSS class pattern: scroll-alert--{variant}
+  const sealGradient = `radial-gradient(circle at 40% 35%, ${lighten(alert.sealColor, 20)}, ${alert.sealColor})`;
   const wrapperClass = `scroll-alert scroll-alert--${alert.variant}`;
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const module = getAnimationModule(alert.type);
+
+    // Build enter timeline
+    const enterTl = module.enter(el, {
+      type: alert.type,
+      variant: alert.variant,
+      icon: alert.icon,
+      sealColor: alert.sealColor,
+      title: alert.title,
+      viewerName: alert.viewerName,
+      subtitle: alert.subtitle,
+      ribbon: alert.ribbon,
+    });
+
+    const enterDuration = enterTl.duration();
+
+    // Build exit timeline (paused, we play it after the pause)
+    const exitTl = module.exit(el);
+    exitTl.pause();
+
+    const exitDuration = exitTl.duration();
+
+    // Calculate pause: total duration minus enter and exit
+    const pauseMs = Math.max(0, duration - (enterDuration * 1000) - (exitDuration * 1000));
+
+    // Master timeline: enter → pause → exit → onDone
+    const master = gsap.timeline();
+    master.add(enterTl);
+    master.call(() => {
+      // After pause, play exit
+      setTimeout(() => {
+        exitTl.play();
+        exitTl.eventCallback("onComplete", onDone);
+      }, pauseMs);
+    });
+
+    timelineRef.current = master;
+
+    return () => {
+      master.kill();
+      exitTl.kill();
+    };
+  }, []); // Run once on mount
+
   return (
-    <div className={wrapperClass}>
+    <div ref={containerRef} className={wrapperClass}>
       {/* Media layer behind parchment */}
       {alert.mediaUrl && alert.mediaType === "video" && (
         <video className="scroll-media" src={alert.mediaUrl} autoPlay muted playsInline />

@@ -98,8 +98,7 @@ export function AlertsPage() {
     isShowingRef.current = true;
     setCurrentAlert(next);
     playSound(next.soundFile, next.soundVolume);
-
-    setTimeout(() => showNext(), next.duration);
+    // No more setTimeout — ScrollAlert calls onDone when animation completes
   }, [playSound]);
 
   const enqueueAlert = useCallback((alert: QueuedAlert) => {
@@ -160,6 +159,7 @@ export function AlertsPage() {
     const queued: QueuedAlert = {
       id: crypto.randomUUID(),
       data: {
+        type: configKey,
         variant: alertCfg.variant,
         icon: alertCfg.icon,
         sealColor: alertCfg.sealColor,
@@ -182,7 +182,14 @@ export function AlertsPage() {
 
   return (
     <div className="alerts-page">
-      {currentAlert && <ScrollAlert key={currentAlert.id} alert={currentAlert.data} />}
+      {currentAlert && (
+        <ScrollAlert
+          key={currentAlert.id}
+          alert={currentAlert.data}
+          duration={currentAlert.duration}
+          onDone={showNext}
+        />
+      )}
     </div>
   );
 }
