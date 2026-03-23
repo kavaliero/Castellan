@@ -47,6 +47,16 @@ function mapCreditsData(credits: CreditsPayload) {
       name: b.viewer.displayName,
       bits: b.amount,
     })),
+    diceRolls: (credits.diceRolls ?? []).map((d) => ({
+      name: d.viewer.displayName,
+      rollCount: d.rollCount,
+    })),
+    channelPoints: (credits.channelPointUsed ?? []).map((cp) => ({
+      name: cp.viewer.displayName,
+      amount: cp.amount,
+    })),
+    lurkers: (credits.lurkers ?? []).map((v) => v.displayName),
+    allViewers: (credits.allViewers ?? []).map((v) => v.displayName),
   };
 }
 

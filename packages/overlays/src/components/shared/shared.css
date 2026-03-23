@@ -1,0 +1,135 @@
+/* ═══════════════════════════════════════════════════════════════
+   Composants partagés — CSS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── FrameCorners — Variante subtle (chat, guild panel) ──────── */
+
+.frame-corner {
+  position: absolute;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.frame-corner--subtle {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--gold-border-strong, rgba(212, 168, 67, 0.5));
+  animation: cornerShine 3s ease-in-out infinite;
+}
+
+.frame-corner--subtle.frame-corner--tl {
+  top: 4px; left: 4px;
+  border-radius: 6px 0 0 0;
+  border-right: none; border-bottom: none;
+}
+.frame-corner--subtle.frame-corner--tr {
+  top: 4px; right: 4px;
+  border-radius: 0 6px 0 0;
+  border-left: none; border-bottom: none;
+  animation-delay: 0.5s;
+}
+.frame-corner--subtle.frame-corner--bl {
+  bottom: 4px; left: 4px;
+  border-radius: 0 0 0 6px;
+  border-right: none; border-top: none;
+  animation-delay: 1s;
+}
+.frame-corner--subtle.frame-corner--br {
+  bottom: 4px; right: 4px;
+  border-radius: 0 0 6px 0;
+  border-left: none; border-top: none;
+  animation-delay: 1.5s;
+}
+
+/* ── FrameCorners — Variante ornate (webcam, game frame) ─────── */
+
+.frame-corner--ornate {
+  width: 36px;
+  height: 36px;
+}
+
+.frame-corner--ornate.frame-corner--tl {
+  top: 18px; left: 18px;
+  border-top: 3px solid var(--gold, #D4A843);
+  border-left: 3px solid var(--gold, #D4A843);
+  border-radius: 8px 0 0 0;
+}
+.frame-corner--ornate.frame-corner--tr {
+  top: 18px; right: 18px;
+  border-top: 3px solid var(--gold, #D4A843);
+  border-right: 3px solid var(--gold, #D4A843);
+  border-radius: 0 8px 0 0;
+}
+.frame-corner--ornate.frame-corner--bl {
+  bottom: 18px; left: 18px;
+  border-bottom: 3px solid var(--gold, #D4A843);
+  border-left: 3px solid var(--gold, #D4A843);
+  border-radius: 0 0 0 8px;
+}
+.frame-corner--ornate.frame-corner--br {
+  bottom: 18px; right: 18px;
+  border-bottom: 3px solid var(--gold, #D4A843);
+  border-right: 3px solid var(--gold, #D4A843);
+  border-radius: 0 0 8px 0;
+}
+
+.frame-corner--ornate::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #FFD700, #B8922E);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.frame-corner--ornate.frame-corner--tl::after { top: -4px; left: -4px; }
+.frame-corner--ornate.frame-corner--tr::after { top: -4px; right: -4px; }
+.frame-corner--ornate.frame-corner--bl::after { bottom: -4px; left: -4px; }
+.frame-corner--ornate.frame-corner--br::after { bottom: -4px; right: -4px; }
+
+/* ── OrnamentalDivider — Symbole ─────────────────────────────── */
+
+.ornamental-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 30px auto;
+  opacity: 0.5;
+}
+
+.ornamental-divider-segment {
+  flex: 1;
+  height: 1px;
+}
+
+.ornamental-divider-segment--left {
+  background: linear-gradient(to right, transparent, var(--gold, #D4A843));
+}
+
+.ornamental-divider-segment--right {
+  background: linear-gradient(to left, transparent, var(--gold, #D4A843));
+}
+
+.ornamental-divider-symbol {
+  color: var(--gold, #D4A843);
+  font-size: 14px;
+}
+
+/* ── OrnamentalDivider — Simple ligne ────────────────────────── */
+
+.ornamental-divider-line {
+  height: 2px;
+  margin: 0 auto;
+  background: linear-gradient(90deg, transparent, var(--gold-border, rgba(212, 168, 67, 0.3)), transparent);
+}
+
+/* ── MedievalParticles ───────────────────────────────────────── */
+
+.medieval-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}

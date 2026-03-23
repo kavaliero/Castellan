@@ -38,6 +38,9 @@ debug-events.log
 # Runtime state (generated, survives restart)
 stream-state.json
 
+# Twitch OAuth token (contient des secrets)
+.twitch-token.json
+
 # Claude / AI
 .claude/
 
@@ -49,3 +52,6 @@ packages/overlays/public/clips/*.mp4
 
 # Test scripts
 test-*.ps1
+
+# Vault Obsidian symlink
+.memory/

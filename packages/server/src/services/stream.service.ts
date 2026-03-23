@@ -96,6 +96,10 @@ export function getStreamInfoPayload(): StreamInfoPayload | null {
     };
 }
 
+export function getViewerCount(): number {
+    return state.viewerCount;
+}
+
 export function getStreamViewersPayload(): StreamViewersPayload {
     return {
         count: state.viewerCount,

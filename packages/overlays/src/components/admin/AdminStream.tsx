@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { apiPost } from "../../hooks/useAdminApi";
 
 interface HealthState {
@@ -103,6 +103,108 @@ export function AdminStream({ health }: AdminStreamProps) {
       </div>
 
       {error && <div className="admin-error">{error}</div>}
+
+      {/* Test Overlays */}
+      <TestOverlaysPanel />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEST OVERLAYS PANEL
+// ═══════════════════════════════════════════════════════════════
+
+interface TestButton {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+const TEST_GROUPS: { title: string; icon: string; buttons: TestButton[] }[] = [
+  {
+    title: "Alertes",
+    icon: "\u{1F514}",
+    buttons: [
+      { key: "follow", label: "Follow", icon: "\u{2764}\u{FE0F}" },
+      { key: "sub", label: "Sub", icon: "\u{2B50}" },
+      { key: "resub", label: "Resub", icon: "\u{1F504}" },
+      { key: "gift_sub", label: "Gift Sub", icon: "\u{1F381}" },
+      { key: "raid", label: "Raid", icon: "\u{1F3F0}" },
+      { key: "bits", label: "Bits", icon: "\u{1F4B0}" },
+      { key: "first_word", label: "First Word", icon: "\u{1F4AC}" },
+      { key: "dice", label: "Dice (old)", icon: "\u{1F3B2}" },
+    ],
+  },
+  {
+    title: "Carte de Fidelite",
+    icon: "\u{1F4DC}",
+    buttons: [
+      { key: "stamp_3", label: "Tampon 3/10", icon: "\u{1F4CD}" },
+      { key: "stamp_9", label: "Tampon 9/10", icon: "\u{1F4CD}" },
+      { key: "stamp_max", label: "Carte pleine !", icon: "\u{2728}" },
+    ],
+  },
+  {
+    title: "Systeme de Des",
+    icon: "\u{1F3B2}",
+    buttons: [
+      { key: "dice_earned", label: "De gagne", icon: "\u{1F381}" },
+      { key: "dice_squatt_d6", label: "d6 squatt (4)", icon: "\u{1F4AA}" },
+      { key: "dice_squatt_d12", label: "d12 squatt sub (9)", icon: "\u{1F4AA}" },
+      { key: "dice_raid_d12", label: "d12 squatt raid (7)", icon: "\u{2694}\u{FE0F}" },
+      { key: "dice_wheel_miss", label: "d20 roue (13)", icon: "\u{1F3AF}" },
+      { key: "dice_wheel_nat20", label: "d20 NAT 20 !", icon: "\u{1F451}" },
+    ],
+  },
+];
+
+function TestOverlaysPanel() {
+  const [lastTest, setLastTest] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  const fireTest = useCallback(async (key: string) => {
+    setTesting(true);
+    setLastTest(null);
+    const res = await apiPost(`/api/alerts/test/${key}`);
+    setTesting(false);
+    if (res.error) {
+      setLastTest(`Erreur: ${res.error}`);
+    } else {
+      setLastTest(key);
+    }
+  }, []);
+
+  return (
+    <div className="admin-test-panel">
+      <div className="admin-test-header">
+        <h3>{"\u{1F9EA}"} Test Overlays</h3>
+        {lastTest && !lastTest.startsWith("Erreur") && (
+          <span className="admin-test-last">{"\u{2705}"} {lastTest}</span>
+        )}
+        {lastTest?.startsWith("Erreur") && (
+          <span className="admin-test-last admin-test-last--error">{lastTest}</span>
+        )}
+      </div>
+      {TEST_GROUPS.map((group) => (
+        <div key={group.title} className="admin-test-group">
+          <div className="admin-test-group-title">
+            {group.icon} {group.title}
+          </div>
+          <div className="admin-test-buttons">
+            {group.buttons.map((btn) => (
+              <button
+                key={btn.key}
+                className="admin-btn admin-btn--test"
+                onClick={() => fireTest(btn.key)}
+                disabled={testing}
+                title={btn.key}
+              >
+                {btn.icon} {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

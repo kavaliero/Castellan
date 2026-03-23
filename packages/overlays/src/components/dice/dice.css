@@ -1,0 +1,309 @@
+/* ═══════════════════════════════════════════════════════════════
+   DICE ROLL OVERLAY — Lancer de de medieval avec images
+   Browser source OBS, fond transparent.
+   ═══════════════════════════════════════════════════════════════ */
+
+.dice-roll-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* ─── Container ──────────────────────────────────────────────── */
+
+.dice-roll {
+  width: 320px;
+  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 60%, #1a1a2e 100%);
+  border: 2px solid #5c4a32;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(92, 74, 50, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Texture de fond */
+.dice-roll::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(167, 139, 250, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ─── Variante couleur par tier ──────────────────────────────── */
+
+.dice-roll--green {
+  border-color: #4ade80;
+}
+.dice-roll--green::before {
+  background: radial-gradient(ellipse at 50% 30%, rgba(74, 222, 128, 0.06) 0%, transparent 60%);
+}
+
+.dice-roll--blue {
+  border-color: #60a5fa;
+}
+.dice-roll--blue::before {
+  background: radial-gradient(ellipse at 50% 30%, rgba(96, 165, 250, 0.06) 0%, transparent 60%);
+}
+
+.dice-roll--red {
+  border-color: #f87171;
+}
+.dice-roll--red::before {
+  background: radial-gradient(ellipse at 50% 30%, rgba(248, 113, 113, 0.06) 0%, transparent 60%);
+}
+
+.dice-roll--purple {
+  border-color: #a78bfa;
+}
+
+/* Nat 20 — glow dore (override toutes les couleurs) */
+.dice-roll--nat20 {
+  border-color: #ffd700;
+  background: linear-gradient(145deg, #2a1f14 0%, #1a1209 60%, #2a1f14 100%);
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+
+.dice-roll-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.dice-roll-viewer {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8d5b5;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.dice-roll-tier {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #8a7a5a;
+}
+
+/* Couleur du tier label par couleur */
+.dice-roll--green .dice-roll-tier { color: #86efac; }
+.dice-roll--blue .dice-roll-tier { color: #93c5fd; }
+.dice-roll--red .dice-roll-tier { color: #fca5a5; }
+
+/* ─── Die (image) ────────────────────────────────────────────── */
+
+.dice-roll-die {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 16px 0;
+}
+
+.dice-roll-die-img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Taille plus grande pour d20 (plus de detail) */
+.dice-roll--wheel .dice-roll-die-img {
+  width: 140px;
+  height: 140px;
+}
+
+.dice-roll-die-faces {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 13px;
+  color: #666;
+  letter-spacing: 1px;
+}
+
+/* ─── Result ─────────────────────────────────────────────────── */
+
+.dice-roll-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.dice-roll-result-number {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: #a78bfa;
+  text-shadow: 0 0 12px rgba(167, 139, 250, 0.4);
+  line-height: 1;
+}
+
+/* Couleur du resultat par tier */
+.dice-roll--green .dice-roll-result-number {
+  color: #4ade80;
+  text-shadow: 0 0 12px rgba(74, 222, 128, 0.4);
+}
+.dice-roll--blue .dice-roll-result-number {
+  color: #60a5fa;
+  text-shadow: 0 0 12px rgba(96, 165, 250, 0.4);
+}
+.dice-roll--red .dice-roll-result-number {
+  color: #f87171;
+  text-shadow: 0 0 12px rgba(248, 113, 113, 0.4);
+}
+
+/* Squatt override — toujours rouge vif */
+.dice-roll--squatt .dice-roll-result-number {
+  color: #ef4444;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Nat 20 — dore */
+.dice-roll-result--nat20 .dice-roll-result-number {
+  font-size: 56px;
+  color: #ffd700;
+  text-shadow:
+    0 0 20px rgba(255, 215, 0, 0.6),
+    0 0 40px rgba(255, 215, 0, 0.3);
+}
+
+.dice-roll-result-text {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c9a96e;
+  letter-spacing: 0.5px;
+}
+
+.dice-roll-result--nat20 .dice-roll-result-text {
+  font-size: 16px;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  animation: dice-pulse 1s ease-in-out infinite;
+}
+
+.dice-roll--squatt .dice-roll-result-text {
+  color: #ef4444;
+}
+
+@keyframes dice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DICE BOARD — Widget persistant des derniers lancers
+   ═══════════════════════════════════════════════════════════════ */
+
+.dice-board-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 16px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.dice-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 220px;
+}
+
+.dice-board-title {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #8a7a5a;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+/* ─── Entry dans le board ────────────────────────────────────── */
+
+.dice-board-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(145deg, rgba(26, 26, 46, 0.9) 0%, rgba(22, 33, 62, 0.9) 100%);
+  border: 1px solid rgba(92, 74, 50, 0.4);
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dice-board-entry--green { border-color: rgba(74, 222, 128, 0.3); }
+.dice-board-entry--blue { border-color: rgba(96, 165, 250, 0.3); }
+.dice-board-entry--red { border-color: rgba(248, 113, 113, 0.3); }
+.dice-board-entry--nat20 {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: linear-gradient(145deg, rgba(42, 31, 20, 0.9) 0%, rgba(26, 18, 9, 0.9) 100%);
+}
+
+.dice-board-entry-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  flex-shrink: 0;
+}
+
+.dice-board-entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dice-board-entry-viewer {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8d5b5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dice-board-entry-detail {
+  font-size: 10px;
+  color: #8a7a5a;
+  letter-spacing: 0.5px;
+}
+
+.dice-board-entry--nat20 .dice-board-entry-detail {
+  color: #ffd700;
+}
+
+.dice-board-entry-result {
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dice-board-entry--green .dice-board-entry-result { color: #4ade80; }
+.dice-board-entry--blue .dice-board-entry-result { color: #60a5fa; }
+.dice-board-entry--red .dice-board-entry-result { color: #f87171; }
+.dice-board-entry--nat20 .dice-board-entry-result {
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}

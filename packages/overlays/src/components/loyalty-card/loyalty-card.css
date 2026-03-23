@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════════════════════════
+   LOYALTY CARD OVERLAY — Carte de fidelite avec images generees
+   Browser source OBS, fond transparent.
+   Utilise card-bg.png (1376x768) et wax-seal.png (1024x1024).
+   ═══════════════════════════════════════════════════════════════ */
+
+.loyalty-card-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 40px;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* ─── Card container ─────────────────────────────────────────── */
+
+.loyalty-card {
+  position: relative;
+  width: 500px;        /* Taille de base dans OBS */
+  aspect-ratio: 1376 / 768;
+  overflow: hidden;
+}
+
+/* ─── Background image ───────────────────────────────────────── */
+
+.loyalty-card-bg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ─── Viewer name (banniere en bas de la carte) ──────────────── */
+
+.loyalty-card-viewer {
+  position: absolute;
+  /* Positionne sur la banniere en bas de la carte */
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3e2a08;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(232, 213, 181, 0.4);
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+/* ─── Wax seals (absolute positioned on slots) ───────────────── */
+
+.loyalty-card-seal {
+  position: absolute;
+  /* Centrage via margin au lieu de transform (evite le conflit avec GSAP) */
+  border-radius: 50%;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Glow dore sur le dernier sceau pose */
+.loyalty-card-seal--new {
+  filter:
+    drop-shadow(0 0 8px rgba(201, 169, 110, 0.7))
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* ─── Counter ────────────────────────────────────────────────── */
+
+.loyalty-card-count {
+  position: absolute;
+  bottom: 6%;
+  right: 12%;
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 12px;
+  color: #5c4a32;
+  font-weight: 600;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+/* ─── Max reached bonus ──────────────────────────────────────── */
+
+.loyalty-card-bonus {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 4px;
+  font-family: "Cinzel", "Times New Roman", serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffd700;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+  animation: loyalty-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes loyalty-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

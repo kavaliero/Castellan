@@ -4,10 +4,14 @@ import { apiGet } from "../hooks/useAdminApi";
 import { AdminAlerts } from "../components/admin/AdminAlerts";
 import { AdminGoals } from "../components/admin/AdminGoals";
 import { AdminStream } from "../components/admin/AdminStream";
+import { AdminViewers } from "../components/admin/AdminViewers";
+import { AdminLiveStats } from "../components/admin/AdminLiveStats";
+import { AdminChallenges } from "../components/admin/AdminChallenges";
+import { AdminConfig } from "../components/admin/AdminConfig";
 import "../components/admin/admin.css";
 import type { AlertsConfig, WSEvent } from "@castellan/shared";
 
-type Tab = "alerts" | "goals" | "stream";
+type Tab = "alerts" | "goals" | "challenges" | "stream" | "viewers" | "live" | "config";
 
 interface GoalsState {
   followers: { current: number; target: number };
@@ -102,7 +106,11 @@ export function AdminPage() {
   const NAV: { key: Tab; icon: string; label: string }[] = [
     { key: "alerts", icon: "🔔", label: "Alerts" },
     { key: "goals", icon: "🎯", label: "Goals" },
+    { key: "challenges", icon: "💪", label: "Défis" },
     { key: "stream", icon: "📡", label: "Stream" },
+    { key: "viewers", icon: "👥", label: "Viewers" },
+    { key: "live", icon: "📊", label: "Live Stats" },
+    { key: "config", icon: "⚙️", label: "Config" },
   ];
 
   return (
@@ -136,8 +144,20 @@ export function AdminPage() {
         {tab === "goals" && goals && (
           <AdminGoals goals={goals} />
         )}
+        {tab === "challenges" && (
+          <AdminChallenges />
+        )}
         {tab === "stream" && (
           <AdminStream health={health} />
+        )}
+        {tab === "viewers" && (
+          <AdminViewers />
+        )}
+        {tab === "live" && (
+          <AdminLiveStats />
+        )}
+        {tab === "config" && (
+          <AdminConfig />
         )}
       </main>
     </div>

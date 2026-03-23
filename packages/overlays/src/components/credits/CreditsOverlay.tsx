@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CreditsParticles } from "./CreditsParticles";
-import { Divider } from "./Divider";
+import { MedievalParticles, OrnamentalDivider } from "../shared";
 import { NameEntry } from "./NameEntry";
 import "./credits.css";
 
@@ -20,6 +19,10 @@ interface CreditsData {
   subscribers: Array<{ name: string; type: string }>;
   raiders: Array<{ name: string; viewers: number }>;
   cheers: Array<{ name: string; bits: number }>;
+  diceRolls?: Array<{ name: string; rollCount: number }>;
+  channelPoints?: Array<{ name: string; amount: number }>;
+  lurkers?: string[];
+  allViewers?: string[];
 }
 
 interface CreditsOverlayProps {
@@ -73,7 +76,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
       <div className="credits-frame" />
       <div className="credits-fade-top" />
       <div className="credits-fade-bottom" />
-      <CreditsParticles />
+      <MedievalParticles variant="embers" />
 
       {/* Promo finale — apparaît après le défilement */}
       <div className={`credits-promo ${showPromo ? "credits-promo--visible" : ""}`}>
@@ -110,7 +113,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
           <div className="credits-duration">Durée : {data.stream.duration}</div>
         </div>
 
-        <Divider />
+        <OrnamentalDivider />
 
         {/* Stats */}
         <div className="credits-section-title">
@@ -132,7 +135,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
           </div>
         )}
 
-        <Divider />
+        <OrnamentalDivider />
 
         {/* Premier message */}
         {data.firstMessage && (
@@ -142,7 +145,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
               Premier message
             </div>
             <NameEntry name={data.firstMessage} />
-            <Divider />
+            <OrnamentalDivider />
           </>
         )}
 
@@ -156,7 +159,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
             {data.followers.map((name, i) => (
               <NameEntry key={name} name={name} delay={i} />
             ))}
-            <Divider />
+            <OrnamentalDivider />
           </>
         )}
 
@@ -170,7 +173,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
             {data.subscribers.map((sub, i) => (
               <NameEntry key={sub.name} name={sub.name} detail={sub.type} delay={i} />
             ))}
-            <Divider />
+            <OrnamentalDivider />
           </>
         )}
 
@@ -184,7 +187,7 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
             {data.cheers.map((cheer, i) => (
               <NameEntry key={cheer.name} name={cheer.name} detail={`${cheer.bits} bits`} delay={i} />
             ))}
-            <Divider />
+            <OrnamentalDivider />
           </>
         )}
 
@@ -198,7 +201,63 @@ export function CreditsOverlay({ data, scrollDuration = 45 }: CreditsOverlayProp
             {data.raiders.map((raider, i) => (
               <NameEntry key={raider.name} name={raider.name} detail={`avec ${raider.viewers} viewers`} delay={i} />
             ))}
-            <Divider />
+            <OrnamentalDivider />
+          </>
+        )}
+
+        {/* Dice Rolls */}
+        {data.diceRolls && data.diceRolls.length > 0 && (
+          <>
+            <div className="credits-section-title">
+              <span className="credits-section-emoji">🎲</span>
+              Lanceurs de dés
+            </div>
+            {data.diceRolls.map((d, i) => (
+              <NameEntry key={d.name} name={d.name} detail={`${d.rollCount} lancer${d.rollCount > 1 ? "s" : ""}`} delay={i} />
+            ))}
+            <OrnamentalDivider />
+          </>
+        )}
+
+        {/* Channel Points */}
+        {data.channelPoints && data.channelPoints.length > 0 && (
+          <>
+            <div className="credits-section-title">
+              <span className="credits-section-emoji">🪙</span>
+              Points de chaîne
+            </div>
+            {data.channelPoints.map((cp, i) => (
+              <NameEntry key={cp.name} name={cp.name} detail={`${cp.amount} points`} delay={i} />
+            ))}
+            <OrnamentalDivider />
+          </>
+        )}
+
+        {/* Lurkers */}
+        {data.lurkers && data.lurkers.length > 0 && (
+          <>
+            <div className="credits-section-title">
+              <span className="credits-section-emoji">👻</span>
+              Les ombres du royaume
+            </div>
+            {data.lurkers.map((name, i) => (
+              <NameEntry key={name} name={name} delay={i} />
+            ))}
+            <OrnamentalDivider />
+          </>
+        )}
+
+        {/* Tous les présents */}
+        {data.allViewers && data.allViewers.length > 0 && (
+          <>
+            <div className="credits-section-title">
+              <span className="credits-section-emoji">🛡️</span>
+              Tous les chevaliers présents
+            </div>
+            {data.allViewers.map((name, i) => (
+              <NameEntry key={name} name={name} delay={i} />
+            ))}
+            <OrnamentalDivider />
           </>
         )}
 

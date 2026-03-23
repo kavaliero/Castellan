@@ -2,8 +2,6 @@
    CASTELLAN CRÉDITS — THÈME MÉDIÉVAL PARCHEMIN
    ============================================ */
 
-   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
-
    /* --- Container principal --- */
    .credits-container {
      position: relative;
@@ -54,13 +52,7 @@
      pointer-events: none;
    }
    
-   /* Canvas particules */
-   .credits-particles {
-     position: absolute;
-     inset: 0;
-     pointer-events: none;
-     z-index: 2;
-   }
+   /* Canvas particules : utilise MedievalParticles (shared.css) */
    
    /* --- Contenu scrollable --- */
    .credits-scroll {
@@ -114,34 +106,7 @@
      margin-right: 10px;
    }
    
-   /* --- Séparateur ornamental --- */
-   .credits-divider {
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     gap: 12px;
-     margin: 30px auto;
-     width: 60%;
-     opacity: 0.5;
-   }
-   
-   .credits-divider-line {
-     flex: 1;
-     height: 1px;
-   }
-   
-   .credits-divider-line--left {
-     background: linear-gradient(to right, transparent, #D4A843);
-   }
-   
-   .credits-divider-line--right {
-     background: linear-gradient(to left, transparent, #D4A843);
-   }
-   
-   .credits-divider-symbol {
-     color: #D4A843;
-     font-size: 14px;
-   }
+   /* Séparateur ornamental : utilise OrnamentalDivider (shared.css) */
    
    /* --- Entrée nom --- */
    .credits-name-entry {
@@ -286,12 +251,4 @@
      max-width: 100%;
    }
 
-   /* --- Animations --- */
-   @keyframes glowPulse {
-     0%, 100% {
-       text-shadow: 0 2px 8px rgba(180, 140, 60, 0.4), 0 0 30px rgba(180, 140, 60, 0.15);
-     }
-     50% {
-       text-shadow: 0 2px 12px rgba(180, 140, 60, 0.6), 0 0 40px rgba(180, 140, 60, 0.25);
-     }
-   }
+   /* glowPulse est dans theme.css */

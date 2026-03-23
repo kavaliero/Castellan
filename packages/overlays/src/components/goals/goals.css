@@ -6,8 +6,6 @@
    cohérent avec le style des overlays chat/credits.
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
-
 /* ─── Panel container (fond sombre + bordure dorée) ───────── */
 
 .guild-panel {

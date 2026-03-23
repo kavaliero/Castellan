@@ -1,0 +1,23 @@
+{
+  "skill_name": "orchestrateur-stream",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Je veux implementer le systeme de des de follow. Quand un nouveau follower arrive, il peut taper !de6 pour un de de squats ou !de20 pour le de du destin. Le de de 6 donne le nombre de squats que je dois faire. Le de de 20 a des effets differents par face (pub, TO, squats, VIP, etc.). Le follower ne peut lancer le de qu'une seule fois. Ou est-ce que je mets quoi ? Est-ce que les specs sont completes ?",
+      "expected_output": "L'orchestrateur devrait challenger les specs (ex: timeout pour lancer le de ? que se passe-t-il si le stream crash ?), identifier le flow (SB trigger follow → Castellan stocke + verifie droit au de → SB commande !de6/!de20 → Castellan logique de + BDD → Castellan overlay animation → SB message chat resultat), et pointer les manques.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Pour l'alerte de raid, je veux une fiche perso doree du raideur qui s'affiche avec des confettis proportionnels au nombre de viewers (3 viewers = quelques confettis, 30 = tempete). Je veux aussi un bouton dans le dashboard pour lancer un clip aleatoire du raideur. Et un texte IA genere sur le raideur. Dis-moi comment architecturer tout ca.",
+      "expected_output": "Devrait identifier 3 sous-features distinctes (alerte raid animee, clip raideur, description IA), recommander de les prioriser separement, detailler le flow pour chaque (SB raid event → Castellan backend enrichit les data → overlay React affiche), et challenger la partie IA (latence de generation, quand cacher, fallback si API down).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Je me demande si le systeme de tampons (10 tampons = relance du de) devrait etre dans StreamerBot avec des variables par user ou dans Castellan avec la BDD. Les tampons se gagnent en parlant dans le chat (1 par stream). Qu'est-ce qui est mieux ?",
+      "expected_output": "Devrait clairement recommander Castellan/BDD (requetes complexes, fiche perso, persistence, affichage overlay) et expliquer pourquoi les variables SB sont insuffisantes (pas de requete aggregee, fragile, pas visible dans la fiche perso). Devrait proposer un champ stamps sur le modele Viewer ou un modele separe.",
+      "files": []
+    }
+  ]
+}

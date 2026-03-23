@@ -1,4 +1,5 @@
 import { prisma } from "../db/client";
+import { getChallengeCredits } from "./challenge.service";
 import type { CreditsPayload, ViewerInfo } from "@castellan/shared";
 
 /**
@@ -174,6 +175,14 @@ export async function buildCredits(streamId: string, broadcasterId?: string | nu
     });
     const lurkers = lurkerSessions.map((s) => toViewerInfo(s.viewer));
 
+    // 9b. Tous les viewers présents pendant le stream (triés par displayName)
+    const allSessions = await prisma.viewerSession.findMany({
+        where: { streamId, ...notBroadcaster },
+        include: { viewer: true },
+        orderBy: { viewer: { displayName: "asc" } },
+    });
+    const allViewers = allSessions.map((s) => toViewerInfo(s.viewer));
+
     // 10. Premier message du stream (hors broadcaster)
     const firstMsg = await prisma.chatMessage.findFirst({
         where: { streamId, ...notBroadcaster },
@@ -194,6 +203,9 @@ export async function buildCredits(streamId: string, broadcasterId?: string | nu
     const topChatterStat = topChatters.length > 0 ? topChatters[0] : undefined;
     const topBitsStat = topBitsDonator.length > 0 ? topBitsDonator[0] : undefined;
     const topCpStat = channelPointUsed.length > 0 ? channelPointUsed[0] : undefined;
+
+    // 12. Challenges completes
+    const challengeCredits = await getChallengeCredits(streamId);
 
     // Longest watcher (hors broadcaster)
     const longestSession = await prisma.viewerSession.findFirst({
@@ -220,7 +232,9 @@ export async function buildCredits(streamId: string, broadcasterId?: string | nu
         topBitsDonator: topBitsDonator.length > 0 ? topBitsDonator : undefined,
         channelPointUsed: channelPointUsed.length > 0 ? channelPointUsed : undefined,
         lurkers: lurkers.length > 0 ? lurkers : undefined,
+        allViewers: allViewers.length > 0 ? allViewers : undefined,
         firstMessage: firstMsg ? toViewerInfo(firstMsg.viewer) : undefined,
+        challenges: challengeCredits.length > 0 ? challengeCredits : undefined,
         stats: {
             totalMessages,
             totalViewers,

@@ -1,0 +1,78 @@
+/* ═══════════════════════════════════════════════════════════════
+   CASTELLAN — Thème médiéval partagé
+
+   Seul fichier à importer les Google Fonts.
+   Définit les CSS variables utilisées dans tous les overlays.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
+
+:root {
+  /* ── Fonts ─────────────────────────────────────────────────── */
+  --font-title: 'MedievalSharp', cursive;
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'IM Fell English', serif;
+
+  /* ── Couleurs principales ──────────────────────────────────── */
+  --gold: #D4A843;
+  --gold-dark: #B8922E;
+  --gold-darker: #8B6914;
+  --gold-light: #FFD700;
+  --parchment: #E8DCC8;
+  --parchment-dark: #E2CFA0;
+  --brown-dark: #3E2A08;
+  --brown-text: #8B4513;
+
+  /* ── Couleurs semi-transparentes (bordures, ombres) ────────── */
+  --gold-border: rgba(212, 168, 67, 0.4);
+  --gold-border-light: rgba(212, 168, 67, 0.35);
+  --gold-border-strong: rgba(212, 168, 67, 0.5);
+  --gold-glow: rgba(180, 140, 60, 0.35);
+  --brown-inset: rgba(62, 39, 15, 0.6);
+  --brown-texture: rgba(139, 105, 20, 0.02);
+
+  /* ── Fonds sombres ─────────────────────────────────────────── */
+  --bg-dark: #1E150D;
+  --bg-darker: #15100A;
+  --bg-darkest: #0C0906;
+
+  /* ── Text stroke noir (lisibilité sur fond variable) ───────── */
+  --text-stroke:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     2px 2px 4px rgba(0, 0, 0, 0.7);
+
+  --text-stroke-heavy:
+    -1px -1px 0 rgba(0, 0, 0, 0.8),
+     1px -1px 0 rgba(0, 0, 0, 0.8),
+    -1px  1px 0 rgba(0, 0, 0, 0.8),
+     1px  1px 0 rgba(0, 0, 0, 0.8),
+     2px 2px 5px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Keyframes partagés ────────────────────────────────────────── */
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 0 2px 8px rgba(180, 140, 60, 0.4), 0 0 30px rgba(180, 140, 60, 0.15);
+  }
+  50% {
+    text-shadow: 0 2px 12px rgba(180, 140, 60, 0.6), 0 0 40px rgba(180, 140, 60, 0.25);
+  }
+}
+
+@keyframes cornerShine {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    box-shadow: inset 0 0 20px rgba(180, 140, 60, 0.1), 0 0 15px rgba(100, 70, 30, 0.3);
+  }
+  50% {
+    box-shadow: inset 0 0 25px rgba(180, 140, 60, 0.15), 0 0 20px rgba(100, 70, 30, 0.4);
+  }
+}

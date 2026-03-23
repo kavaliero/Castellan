@@ -5,8 +5,6 @@
    Dimensionné pour 1920x1080. Le centre est transparent.
    ═══════════════════════════════════════════════════════════════ */
 
-   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
-
    /* ─── Reset pour Browser Source OBS (pas de gap) ──────────── */
    
    html, body {
@@ -58,65 +56,14 @@
      z-index: 2;
    }
    
-   /* ─── Coins ornementaux ───────────────────────────────────── */
-   
-   .live-coding-frame-corner {
-     position: absolute;
-     width: 36px;
-     height: 36px;
-     z-index: 3;
-     pointer-events: none;
+   /* Coins ornementaux : utilise FrameCorners variant="ornate" (shared.css) */
+   /* Surcharge spécifique : décalage des coins hauts sous la bannière */
+   .live-coding-frame .frame-corner--tl {
+     margin-top: 110px;
    }
-   
-   .live-coding-frame-corner--tl {
-    margin-top: 110px;
-     top: 18px;
-     left: 18px;
-     border-top: 3px solid #D4A843;
-     border-left: 3px solid #D4A843;
-     border-radius: 8px 0 0 0;
+   .live-coding-frame .frame-corner--tr {
+     margin-top: 110px;
    }
-   
-   .live-coding-frame-corner--tr {
-    margin-top: 110px;
-     top: 18px;
-     right: 18px;
-     border-top: 3px solid #D4A843;
-     border-right: 3px solid #D4A843;
-     border-radius: 0 8px 0 0;
-   }
-   
-   .live-coding-frame-corner--bl {
-     bottom: 18px;
-     left: 18px;
-     border-bottom: 3px solid #D4A843;
-     border-left: 3px solid #D4A843;
-     border-radius: 0 0 0 8px;
-   }
-   
-   .live-coding-frame-corner--br {
-     bottom: 18px;
-     right: 18px;
-     border-bottom: 3px solid #D4A843;
-     border-right: 3px solid #D4A843;
-     border-radius: 0 0 8px 0;
-   }
-   
-   /* Point brillant au sommet du coin */
-   .live-coding-frame-corner::after {
-     content: '';
-     position: absolute;
-     width: 8px;
-     height: 8px;
-     border-radius: 50%;
-     background: radial-gradient(circle at 40% 40%, #FFD700, #B8922E);
-     box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
-   }
-   
-   .live-coding-frame-corner--tl::after { top: -4px; left: -4px; }
-   .live-coding-frame-corner--tr::after { top: -4px; right: -4px; }
-   .live-coding-frame-corner--bl::after { bottom: -4px; left: -4px; }
-   .live-coding-frame-corner--br::after { bottom: -4px; right: -4px; }
    
    /* ─── Bannière catégorie (haut centre) ────────────────────── */
    

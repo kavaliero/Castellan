@@ -54,3 +54,19 @@ export async function apiPost<T = any>(path: string, body?: unknown): Promise<Ap
     return { data: null, error: "Cannot connect to server" };
   }
 }
+
+export async function apiDelete<T = any>(path: string): Promise<ApiResult<T>> {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { data: null, error: data.error ?? `HTTP ${res.status}` };
+    }
+    const data = await res.json();
+    return { data, error: null };
+  } catch {
+    return { data: null, error: "Cannot connect to server" };
+  }
+}

@@ -7,6 +7,8 @@ import { broadcast } from "../ws/broadcaster";
 import { findOrCreateViewer, findOrCreateSession } from "./viewer.service";
 import { incrementFollowerCount, incrementSubscriberCount, setLastFollow, setLastSub, getFollowersTarget, getSubscribersTarget, updateGoalsConfig } from "./goals.service";
 import { setStreamInfo, setViewerCount, clearStreamState } from "./stream.service";
+import { incrementStamp, triggerBadgeCheck } from "./badge.service";
+import { grantDiceCapacity, rollDice } from "./dice.service";
 
 /**
  * Service StreamerBot — se connecte au WebSocket Server de StreamerBot
@@ -51,8 +53,15 @@ export function getBroadcasterId(): string | null {
     return currentBroadcasterId;
 }
 
+let _onBroadcasterIdChange: ((id: string | null) => void) | null = null;
+
+export function onBroadcasterIdChange(cb: (id: string | null) => void): void {
+    _onBroadcasterIdChange = cb;
+}
+
 export function setBroadcasterId(id: string | null): void {
     currentBroadcasterId = id;
+    if (_onBroadcasterIdChange) _onBroadcasterIdChange(id);
     if (id) {
         console.log(`[StreamerBot] 🎙️ Broadcaster ID configuré: ${id}`);
     }
@@ -138,6 +147,9 @@ async function handleFollow(viewer: ViewerInfo) {
             type: "goal:update",
             payload: { type: "followers", current: newCount, target: getFollowersTarget() },
         });
+
+        // Badge check (fire-and-forget)
+        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
     } catch (err) {
         console.error("[StreamerBot] Erreur Follow:", err);
     }
@@ -177,6 +189,10 @@ async function handleSub(viewer: ViewerInfo, tier: number, months: number) {
             type: "goal:update",
             payload: { type: "subscribers", current: newCount, target: getSubscribersTarget() },
         });
+
+        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        // Chaque sub/resub donne une capacite de de
+        grantDiceCapacity(dbViewer.id, "sub", "subscription", viewer.displayName).catch(() => {});
     } catch (err) {
         console.error("[StreamerBot] Erreur Sub:", err);
     }
@@ -209,6 +225,8 @@ async function handleGiftSub(
             type: "alert:gift_sub",
             payload: { viewer: gifter, recipientName, tier, totalGifted, anonymous },
         });
+
+        triggerBadgeCheck(dbViewer.id, gifter.displayName).catch(() => {});
     } catch (err) {
         console.error("[StreamerBot] Erreur GiftSub:", err);
     }
@@ -235,6 +253,10 @@ async function handleRaid(viewer: ViewerInfo, viewers: number) {
             type: "alert:raid",
             payload: { viewer, viewers, fromChannel: viewer.displayName },
         });
+
+        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        // Chaque raid donne une capacite de de
+        grantDiceCapacity(dbViewer.id, "raid", "raid", viewer.displayName).catch(() => {});
     } catch (err) {
         console.error("[StreamerBot] Erreur Raid:", err);
     }
@@ -266,6 +288,8 @@ async function handleCheer(viewer: ViewerInfo, amount: number) {
             type: "alert:bits",
             payload: { viewer, amount },
         });
+
+        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
     } catch (err) {
         console.error("[StreamerBot] Erreur Cheer:", err);
     }
@@ -301,6 +325,8 @@ async function handleRewardRedemption(
             type: "alert:channel_point_redemption",
             payload: { viewer, rewardName, rewardCost },
         });
+
+        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
     } catch (err) {
         console.error("[StreamerBot] Erreur RewardRedemption:", err);
     }
@@ -331,6 +357,21 @@ async function handleHypeTrain(level: number, totalPoints: number, progress: num
 
 async function handleFirstWord(viewer: ViewerInfo) {
     console.log(`[StreamerBot] 🪶 First Word: ${viewer.displayName}`);
+
+    try {
+        if (currentStreamId) {
+            const dbViewer = await findOrCreateViewer(viewer);
+            await prisma.streamEvent.create({
+                data: {
+                    streamId: currentStreamId,
+                    viewerId: dbViewer.id,
+                    type: "first_word",
+                },
+            });
+        }
+    } catch (err) {
+        console.error("[StreamerBot] Erreur FirstWord persist:", err);
+    }
 
     broadcast({
         type: "alert:first_word",
@@ -469,6 +510,21 @@ export async function connectToStreamerBot(options?: {
                 data: { totalMessages: { increment: 1 } },
             });
 
+            // Tampon : +1 si premiere fois que le viewer parle dans ce stream
+            incrementStamp(dbViewer.id, currentStreamId).catch(() => {});
+
+            // Badge check fire-and-forget
+            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+
+            // Commande !de : lancer un de (squatt ou roue)
+            const diceMatch = content.trim().toLowerCase().match(/^!de?\s+(squatt?|roue)$/);
+            if (diceMatch) {
+                const dieType = diceMatch[1].startsWith("squatt") ? "squatt" : "wheel";
+                rollDice(dbViewer.id, dieType as "squatt" | "wheel").catch((err) => {
+                    console.error("[Dice] Erreur commande !de:", err);
+                });
+            }
+
             broadcast({
                 type: "chat:message",
                 payload: {
@@ -577,9 +633,11 @@ export async function connectToStreamerBot(options?: {
     });
 
     // ── Viewer Count Update (live) ──
-    // Cet event fire quand le viewer count change sur Twitch.
-    // C'est la source PRINCIPALE pour le compteur de viewers dans l'overlay /frame.
-    // (PresentViewers sert au tracking DB des sessions individuelles)
+    // DÉSACTIVÉ : StreamerBot envoie toujours data.viewers = undefined (→ 0),
+    // ce qui écrase le compteur valide du polling getActiveViewers().
+    // On s'appuie uniquement sur le polling (60s) qui retourne les bons chiffres.
+    // TODO : réactiver si StreamerBot corrige l'event.
+    /*
     client.on("Twitch.ViewerCountUpdate", async ({ data }: { data: any }) => {
         const count = data.viewers ?? 0;
         console.log(`[StreamerBot] 👁️ ViewerCountUpdate: ${count} viewers`);
@@ -590,6 +648,7 @@ export async function connectToStreamerBot(options?: {
             payload: { count },
         });
     });
+    */
 
     // ── Stream Update (live) ──
     client.on("Twitch.StreamUpdate", async ({ data }: { data: any }) => {
@@ -727,8 +786,7 @@ export async function connectToStreamerBot(options?: {
             // StreamerBot envoie broadcastUserId dans les arguments
             const broadcasterId = args.broadcastUserId ?? args.broadcasterId ?? null;
             if (broadcasterId) {
-                currentBroadcasterId = String(broadcasterId);
-                console.log(`[StreamerBot] 🎙️ Broadcaster ID: ${currentBroadcasterId}`);
+                setBroadcasterId(String(broadcasterId));
             }
 
             console.log(`[StreamerBot] 🟢 Stream Start: ${game}`);
@@ -819,7 +877,7 @@ export async function connectToStreamerBot(options?: {
 
                 console.log(`[StreamerBot] 📝 Stream terminé: ${currentStreamId}`);
                 currentStreamId = null;
-                currentBroadcasterId = null;
+                setBroadcasterId(null);
                 spokenViewers.clear();
                 clearStreamState();
             } catch (err) {
@@ -932,6 +990,8 @@ export async function connectToStreamerBot(options?: {
 async function pollViewerCount() {
     try {
         const response = await client.getActiveViewers();
+        console.log(`[StreamerBot] 📊 Poll viewers raw response:`, JSON.stringify(response));
+
         if (response.status === "ok") {
             const count = response.count ?? response.viewers?.length ?? 0;
             console.log(`[StreamerBot] 📊 Poll viewers: ${count} actifs`);
@@ -941,10 +1001,11 @@ async function pollViewerCount() {
                 type: "stream:viewers",
                 payload: { count },
             });
+        } else {
+            console.warn(`[StreamerBot] ⚠️ Poll viewers status: ${response.status}`);
         }
     } catch (err) {
-        // Silencieux — le polling est un fallback, pas critique
-        console.warn("[StreamerBot] ⚠️ Poll viewers échoué:", (err as Error).message);
+        console.error("[StreamerBot] ⚠️ Poll viewers échoué:", err);
     }
 }
 

@@ -26,13 +26,83 @@ model Viewer {
   totalChannelPointsUsed Int             @default(0)
   isFollower             Boolean         @default(false)
   isSubscriber           Boolean         @default(false)
+  // Enrichissement Twitch API (rempli lazily via appel API)
+  isStreamer             Boolean         @default(false)   // Le viewer est lui-meme streamer
+  broadcasterType        String?                           // "partner", "affiliate", "" ou null
+  twitchFollowerCount    Int?                              // Nombre de followers sur sa propre chaine
+  twitchProfileImageUrl  String?                           // URL de sa photo de profil
+  twitchEnrichedAt       DateTime?                         // Derniere mise a jour des infos Twitch
+  twitchDeletedAt        DateTime?                         // Marque si le compte Twitch n'existe plus
+  stampCount             Int             @default(0)        // Tampons (0-10), +1 par stream ou le viewer parle
+  stampLastStreamId      String?                            // ID du dernier stream ou il a gagne un tampon (evite doublon)
   firstSeenAt            DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
 
   // Relations — un viewer a plusieurs sessions, messages, etc.
-  sessions     ViewerSession[]
-  chatMessages ChatMessage[]
-  events       StreamEvent[]
+  sessions       ViewerSession[]
+  chatMessages   ChatMessage[]
+  events         StreamEvent[]
+  earnedBadges   ViewerBadge[]
+  diceCapacities DiceCapacity[]
+}
+
+/// Badge gagne par un viewer. Stocke la date d'obtention
+/// pour les notifications et l'affichage dans la fiche perso.
+model ViewerBadge {
+  id        String   @id @default(cuid())
+  viewerId  String
+  badgeId   String   // Correspond a BadgeDefinition.id dans le code
+  earnedAt  DateTime @default(now())
+  notified  Boolean  @default(false)  // true = notification envoyee (chat + overlay)
+
+  viewer Viewer @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([viewerId, badgeId])
+  @@index([viewerId])
+}
+
+/// Capacite de lancer un de, gagnee par fidelite (follow), abonnement (sub) ou raid.
+/// Chaque capacite = un usage unique. Le viewer choisit quel de lancer.
+/// Tiers : follow (d6 squatt / d20 follow-roue), sub (d12 squatt / d20 sub-roue), raid (d12 squatt / d20 sub-roue)
+model DiceCapacity {
+  id        String    @id @default(cuid())
+  viewerId  String
+  tier      String    // "follow", "sub", "raid"
+  source    String    // "loyalty_card", "subscription", "raid"
+  dieType   String?   // null = pas encore choisi, "squatt" | "wheel"
+  result    Int?      // null = pas encore lance, sinon le resultat du de
+  usedAt    DateTime? // null = pas encore utilise
+  createdAt DateTime  @default(now())
+
+  viewer Viewer @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@index([viewerId])
+  @@index([viewerId, usedAt]) // Pour trouver rapidement les des disponibles
+}
+
+/// Defi actif pendant un stream (squatts, voix de Stitch, clavier inverse, etc.).
+/// Deux types : "counter" (squatts, on incremente vers un target) et "timer" (decompte en secondes).
+/// Un seul compteur par nom par stream (cumulatif : les des ajoutent au target, l'admin incremente le current).
+model Challenge {
+  id          String    @id @default(cuid())
+  streamId    String
+  type        String    // "counter" | "timer"
+  name        String    // identifiant unique : "squatts", "voix-stitch", "clavier-inverse"
+  label       String    // affichage : "Squatts", "Voix de Stitch", "Clavier a l'envers"
+  icon        String?   // emoji optionnel pour l'overlay
+  current     Int       @default(0)  // counter: progression actuelle | timer: secondes restantes
+  target      Int       @default(0)  // counter: objectif a atteindre | timer: total de secondes attribuees
+  isActive    Boolean   @default(true)   // visible dans l'overlay
+  isRunning   Boolean   @default(false)  // timer uniquement : decompte en cours ?
+  startedAt   DateTime? // timer uniquement : quand le decompte a demarre
+  completedAt DateTime? // quand le defi a ete termine (counter atteint ou timer a 0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id])
+
+  @@unique([streamId, name])  // un seul defi par nom par stream
+  @@index([streamId, isActive])
 }
 
 /// Une session de stream (du début à la fin).
@@ -48,9 +118,10 @@ model Stream {
   endedAt   DateTime?
 
   // Relations
-  sessions ViewerSession[]
-  messages ChatMessage[]
-  events   StreamEvent[]
+  sessions   ViewerSession[]
+  messages   ChatMessage[]
+  events     StreamEvent[]
+  challenges Challenge[]
 }
 
 /// La présence d'un viewer pendant un stream spécifique.

@@ -3,6 +3,7 @@ import type { WSEvent } from "@castellan/shared";
 import { getGoalsInitPayload, getGoalsState } from "../services/goals.service";
 import { getStreamInfoPayload, getStreamViewersPayload } from "../services/stream.service";
 import { getAlertsConfig } from "../services/alerts.service";
+import { getActiveChallenges } from "../services/challenge.service";
 
 /**
  * Le Broadcaster gère toutes les connexions WebSocket.
@@ -84,6 +85,15 @@ export function initWebSocket(port: number = 3002): WebSocketServer {
       socket.send(JSON.stringify({ type: "stream:info", payload: streamInfo }));
     }
     socket.send(JSON.stringify({ type: "stream:viewers", payload: getStreamViewersPayload() }));
+
+    // Envoyer les defis actifs
+    getActiveChallenges().then((challenges) => {
+      if (challenges.length > 0) {
+        socket.send(JSON.stringify({ type: "challenge:list", payload: { challenges } }));
+      }
+    }).catch((err) => {
+      console.error("[WS] Erreur envoi challenges:", err);
+    });
 
     // Répondre aux pings (keep-alive)
     socket.on("message", (raw) => {

@@ -2,8 +2,6 @@
    CASTELLAN CHAT — THÈME MÉDIÉVAL PARCHEMIN
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap');
-
 /* --- Container principal --- */
 .chat-container {
   position: relative;
@@ -45,14 +43,14 @@
   pointer-events: none;
 }
 
-/* Ligne ornementale en bas */
+/* Ligne ornementale en bas (surcharge positionnement du OrnamentalDivider) */
 .chat-bottom-ornament {
   position: absolute;
   bottom: 0;
   left: 10%;
   right: 10%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(212, 168, 67, 0.3), transparent);
+  width: auto !important;
+  margin: 0 !important;
   z-index: 5;
 }
 
@@ -69,38 +67,7 @@
   z-index: 6;
 }
 
-/* Coins ornementaux */
-.chat-frame-corner {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(212, 168, 67, 0.5);
-  animation: cornerShine 3s ease-in-out infinite;
-}
-
-.chat-frame-corner--tl {
-  top: 4px; left: 4px;
-  border-radius: 6px 0 0 0;
-  border-right: none; border-bottom: none;
-}
-.chat-frame-corner--tr {
-  top: 4px; right: 4px;
-  border-radius: 0 6px 0 0;
-  border-left: none; border-bottom: none;
-  animation-delay: 0.5s;
-}
-.chat-frame-corner--bl {
-  bottom: 4px; left: 4px;
-  border-radius: 0 0 0 6px;
-  border-right: none; border-top: none;
-  animation-delay: 1s;
-}
-.chat-frame-corner--br {
-  bottom: 4px; right: 4px;
-  border-radius: 0 0 6px 0;
-  border-left: none; border-top: none;
-  animation-delay: 1.5s;
-}
+/* Coins ornementaux : utilise FrameCorners (shared.css) */
 
 /* --- Zone des messages --- */
 .chat-messages {
@@ -161,13 +128,7 @@
   margin: 0 2px;
 }
 
-/* --- Canvas particules --- */
-.chat-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-}
+/* Canvas particules : utilise MedievalParticles (shared.css) */
 
 /* --- Animations --- */
 @keyframes messageSlideIn {
@@ -182,26 +143,4 @@
   }
 }
 
-@keyframes borderGlow {
-
-  0%,
-  100% {
-    box-shadow: inset 0 0 20px rgba(180, 140, 60, 0.1), 0 0 15px rgba(100, 70, 30, 0.3);
-  }
-
-  50% {
-    box-shadow: inset 0 0 25px rgba(180, 140, 60, 0.15), 0 0 20px rgba(100, 70, 30, 0.4);
-  }
-}
-
-@keyframes cornerShine {
-
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
+/* borderGlow et cornerShine sont dans theme.css */

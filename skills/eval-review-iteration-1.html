@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "orchestrateur-stream", "runs": [{"id": "eval-1-dice-follow-with_skill", "prompt": "Je veux implementer le systeme de des de follow. Quand un nouveau follower arrive, il peut taper !de6 pour un de de squats ou !de20 pour le de du destin. Le de de 6 donne le nombre de squats que je dois faire. Le de de 20 a des effets differents par face (pub, TO, squats, VIP, etc.). Le follower ne peut lancer le de qu'une seule fois. Ou est-ce que je mets quoi ? Est-ce que les specs sont completes ?", "eval_id": 1, "outputs": [{"name": "response.md", "type": "text", "content": "# Evaluation: Systeme de Des de Follow (Feature Specification Review)\n\n## 1. Comprehension et Reformulation\n\n**Ce que tu veux faire :**\nQuand un nouveau follower arrive, il peut lancer deux commandes chat :\n- `!de6` \u2192 roule un d6 (1-6), le resultat = nombre de squats a faire\n- `!de20` \u2192 roule un d20 (1-20), chaque face a un effet different (pub, TO, squats, nombre de VIP accordes, etc.)\n\nChaque follower ne peut lancer que **une seule fois** (limite d'une execution par viewer pour l'ensemble du systeme ou par stream ?).\n\n---\n\n## 2. Questions Manquantes (Specs Incompletes)\n\nAvant d'aller plus loin, il y a des gaps importants a clarifier :\n\n### 2.1 Scope temporel de la limite \"une seule fois\"\n- [ ] **Par stream ?** Un follower qui a deja joue une fois ce stream ne peut pas relancer ?\n- [ ] **A vie ?** Un follower qui a deja roule le de une fois (sur tous les streams) ne peut jamais relancer ?\n- [ ] **Ou une fois par commande ?** Il peut faire `!de6` une fois ET `!de20` une fois ?\n\n**Recommandation** : Par stream semble le plus logique (on remet les compteurs a zero a chaque stream). Mais il faut confirmer.\n\n### 2.2 Quel \"nouveau follower\" exactement ?\n- [ ] Seulement les viewers qui viennent de follow (event Twitch.Follow) ?\n- [ ] Ou tout viewer qui entre au stream et n'a jamais roule avant ce stream ?\n- [ ] Et si quelqu'un unfollow puis refollow pendant le stream ?\n\n**Recommandation** : Trigger sur l'event Twitch.Follow, stocke le fait qu'il a le \"droit\" de lancer le de ce stream. Reset a chaque nouveau stream.\n\n### 2.3 Les 20 effets du d20 - sont-ils tous definis ?\n- [ ] Pub : `!pb` en chat + timeout 30s (force le viewer a acheter) ?\n- [ ] TO (Timeout) : timeout direct sans pub ?\n- [ ] Squats : combien ?\n- [ ] VIP : 1 jour ? 30 jours ? Toute la duree du stream ?\n- [ ] Autres effets ? (points de cha\u00eene, raid gratuit, etc.)\n\n**Recommandation** : Definir une table des 20 effets avec parametres precis. Exemple :\n\n```json\n{\n  \"1\": { \"type\": \"squats\", \"count\": 5 },\n  \"2\": { \"type\": \"timeout\", \"duration\": 60 },\n  \"3\": { \"type\": \"commercial\", \"duration\": 30 },\n  \"4\": { \"type\": \"vip\", \"duration\": 3600 },\n  ...\n  \"20\": { \"type\": \"raid_gift\", \"viewers\": 100 }\n}\n```\n\n### 2.4 Affichage et feedback\n- [ ] Le resultat du de doit-il s'afficher dans le chat ?\n- [ ] Doit-il y avoir une alerte/overlay visible quand un follower roule ?\n- [ ] Notification au streamer (dashboard, son, message chat) ?\n\n**Recommandation** : Alerte visible dans le chat + (optionnel) overlay anime pour les d20 \"importants\" (VIP, TO, etc.).\n\n### 2.5 Timing d'execution des effets\n- [ ] L'effet s'execute immediatement quand le de est roule ?\n- [ ] Ou le streamer peut-il executer l'effet manuellement depuis le dashboard ?\n\n**Recommandation** : Execution immediate pour les effects simples (squats, TO), queue manuelle pour les effects complexes (pub, VIP).\n\n### 2.6 Historique et reporting\n- [ ] Faut-il garder trace de qui a roule quoi et le resultat ?\n- [ ] Dashboard pour voir les des du stream actuel ?\n\n**Recommandation** : Oui pour la tracabilite. Champ optionnel dans StreamEvent.\n\n---\n\n## 3. Trace du Flux Complet (Architecture Mapping)\n\nSupposant les specs ci-dessus resolues, voici le flow complet :\n\n```\n\u250c\u2500 Twitch Follow Event\n\u2502\n\u2514\u2500 StreamerBot trigger \"Twitch.Follow\"\n   \u2502\n   \u2514\u2500 SB envoie viewer data via WS a Castellan\n      \u2502\n      \u251c\u2500 1. Castellan stocke Follow en BDD + marque viewer \"can_roll_dice_this_stream\"\n      \u2502\n      \u2514\u2500 2. SB envoie message chat : \"{username}, nouveau follow ! Tape !de6 ou !de20\"\n          \u2502\n          \u2514\u2500 3. Viewer tape !de6 ou !de20 dans le chat\n             \u2502\n             \u251c\u2500 StreamerBot trigger \"Chat.Command\" (!de6 ou !de20)\n             \u2502\n             \u2514\u2500 A. Verifier en Castellan que le viewer a le droit de rouler\n                  \u2502\n                  \u251c\u2500 Si NON \u2192 message chat : \"Tu as deja roule ce stream\"\n                  \u2514\u2500 Si OUI \u2192 continuer\n                      \u2502\n                      B. Rouler le de (random 1-6 ou 1-20)\n                      \u2502\n                      C. Stocker le resultat en BDD (StreamEvent type=\"dice\")\n                      \u2502\n                      D. Broadcaster event WebSocket pour les overlays\n                      \u2502\n                      \u2514\u2500 E. Executer l'effet correspondant :\n                         \u251c\u2500 Si squats : broadcast + overlay animation\n                         \u251c\u2500 Si TO : CPH.TwitchTimeoutUser() via SB\n                         \u251c\u2500 Si pub : CPH.TwitchRunCommercial() via SB\n                         \u251c\u2500 Si VIP : via Twitch API (Castellan backend)\n                         \u2514\u2500 etc.\n```\n\n---\n\n## 4. Ou Mettre Quoi ? (Placement Technique)\n\n### 4.1 Castellan Backend (Express + Prisma)\n\n**Quoi mettre ici :**\n\n1. **Schema Prisma : nouvelle table ou extension?**\n\n   **Option A** (recommandee) : Etendre `StreamEvent`\n   ```prisma\n   // Existant, on ne change rien\n   model StreamEvent {\n     id        Int      @id\n     stream    Stream   @relation(...)\n     streamId  Int\n     viewer    Viewer?  @relation(...)\n     viewerId  Int?\n     type      String   // \"dice\"\n     data      String?  // JSON: { command: \"d6\" | \"d20\", result: 1-20 }\n     timestamp DateTime @default(now())\n   }\n\n   // ON N'AJOUTE PAS de table DiceRoll separee \u2014 StreamEvent suffit\n   ```\n\n   **Option B (anti-pattern)** : Ajouter une table `DiceRoll` separee\n   - Raison pour **refuser** : on cree du schema pour une feature simple. `StreamEvent` est deja generique et flexible.\n\n2. **Service backend (nouveau service `dice.service.ts`)**\n\n   ```typescript\n   // packages/server/src/services/dice.service.ts\n\n   export class DiceService {\n     // Verifier si un viewer a deja roule ce stream\n     async canRollThisStream(viewerId: number, streamId: number): Promise<boolean> {\n       const existing = await prisma.streamEvent.findFirst({\n         where: {\n           viewerId,\n           streamId,\n           type: \"dice\"\n         }\n       });\n       return !existing;\n     }\n\n     // Rouler le de et stocker\n     async rollDice(viewerId: number, streamId: number, command: \"d6\" | \"d20\"): Promise<DiceResult> {\n       const faces = command === \"d6\" ? 6 : 20;\n       const result = Math.floor(Math.random() * faces) + 1;\n\n       // Stocker en BDD\n       const event = await prisma.streamEvent.create({\n         data: {\n           viewerId,\n           streamId,\n           type: \"dice\",\n           data: JSON.stringify({ command, result })\n         }\n       });\n\n       return { result, event };\n     }\n\n     // Recuperer la config des effets du d20\n     getDiceEffects(): Record<number, DiceEffect> {\n       return DICE_20_EFFECTS; // Config externalisee en JSON\n     }\n   }\n   ```\n\n3. **Route POST /api/dice/roll**\n\n   ```typescript\n   app.post(\"/api/dice/roll\", async (req, res) => {\n     const { viewerId, streamId, command } = req.body; // command: \"d6\" | \"d20\"\n\n     const canRoll = await diceService.canRollThisStream(viewerId, streamId);\n     if (!canRoll) {\n       return res.json({ ok: false, error: \"already_rolled\" });\n     }\n\n     const { result, event } = await diceService.rollDice(viewerId, streamId, command);\n\n     // Broadcast vers overlays\n     ws.broadcast(\"alert:dice\", {\n       viewer: await viewerService.getViewerInfo(viewerId),\n       command,\n       result,\n       effect: command === \"d20\" ? DICE_20_EFFECTS[result] : null\n     });\n\n     // Retourner le resultat au SB pour execution d'effet\n     res.json({ ok: true, result, effect: DICE_20_EFFECTS[result] });\n   });\n   ```\n\n4. **Config des effets (fichier JSON ou en TypeScript)**\n\n   ```typescript\n   // packages/server/src/config/dice-effects.ts\n   export const DICE_20_EFFECTS: Record<number, DiceEffect> = {\n     1: { type: \"squats\", count: 3, label: \"3 squats\" },\n     2: { type: \"squats\", count: 5, label: \"5 squats\" },\n     3: { type: \"timeout\", duration: 30, label: \"Timeout 30s\" },\n     4: { type: \"timeout\", duration: 60, label: \"Timeout 1min\" },\n     5: { type: \"commercial\", duration: 30, label: \"Pub 30s\" },\n     6: { type: \"commercial\", duration: 60, label: \"Pub 1min\" },\n     7: { type: \"vip\", duration: 3600, label: \"VIP 1h\" },\n     8: { type: \"vip\", duration: 86400, label: \"VIP 1 jour\" },\n     9: { type: \"points\", amount: 100, label: \"+100 points\" },\n     10: { type: \"points\", amount: 500, label: \"+500 points\" },\n     11: { type: \"raid_gift\", viewers: 10, label: \"Raid de 10 viewers\" },\n     12: { type: \"sub_gift\", count: 1, label: \"1 sub gift\" },\n     13: { type: \"timed_mod\", duration: 300, label: \"Mod temporaire 5min\" },\n     14: { type: \"squats\", count: 10, label: \"10 squats!\" },\n     15: { type: \"commercial\", duration: 90, label: \"Pub 90s\" },\n     16: { type: \"timeout\", duration: 120, label: \"Timeout 2min\" },\n     17: { type: \"vip\", duration: 604800, label: \"VIP 1 semaine\" },\n     18: { type: \"custom\", action: \"give_special_role\", label: \"Role special!\" },\n     19: { type: \"squats\", count: 20, label: \"20 squats!! (jackpot)\" },\n     20: { type: \"raid_gift\", viewers: 50, label: \"Mega raid 50!\" }\n   };\n   ```\n\n### 4.2 StreamerBot\n\n**Quoi mettre ici :**\n\n1. **Trigger : Chat Command**\n\n   ```\n   Trigger: Chat.Message\n   Condition: message matches \"^!(de6|de20)$\"\n\n   Arguments pushed:\n   - %triggerUsername% \u2192 nom du viewer\n   - %triggerUserId% \u2192 ID Twitch (a convertir)\n   - %triggerMessage% \u2192 \"!de6\" ou \"!de20\"\n   ```\n\n2. **Action : Appel a Castellan**\n\n   ```\n   Sub-action: Execute C# Code (CPHInline)\n\n   public class CPHInline {\n     public async bool Execute() {\n       var username = args[\"triggerUsername\"].ToString();\n       var userId = args[\"triggerUserId\"].ToString();\n       var command = args[\"triggerMessage\"].ToString().Replace(\"!\", \"\");\n\n       // Appel HTTP a Castellan\n       using (var client = new HttpClient()) {\n         var json = JsonConvert.SerializeObject(new {\n           viewerId = int.Parse(userId),\n           streamId = 1, // TODO: recup depuis Castellan\n           command = command\n         });\n         var content = new StringContent(json, Encoding.UTF8, \"application/json\");\n         var response = await client.PostAsync(\"http://localhost:3001/api/dice/roll\", content);\n\n         if (response.IsSuccessStatusCode) {\n           var result = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());\n           var diceResult = result[\"result\"];\n           var effect = result[\"effect\"];\n\n           CPH.SendMessage($\"{username} a roule {diceResult} au {command.ToUpper()}! {effect[\"label\"]}\");\n\n           // Executer l'effet (voir details ci-dessous)\n           ExecuteDiceEffect(effect, username);\n         } else {\n           CPH.SendMessage($\"Erreur dice: {username} a deja roule ce stream!\");\n         }\n       }\n       return true;\n     }\n\n     private void ExecuteDiceEffect(dynamic effect, string username) {\n       var effectType = effect[\"type\"].ToString();\n       switch (effectType) {\n         case \"timeout\":\n           CPH.TwitchTimeoutUser(username, (int)effect[\"duration\"]);\n           break;\n         case \"commercial\":\n           CPH.TwitchRunCommercial((int)effect[\"duration\"]);\n           break;\n         case \"squats\":\n           // Broadcast vers overlay \"squats counter\"\n           CPH.SendMessage($\"/me {username} doit faire {effect[\"count\"]} squats!\");\n           break;\n         case \"vip\":\n           // TODO: Twitch API pour ajouter VIP (passe par Castellan)\n           CPH.SendMessage($\"/me {username} devient VIP!\");\n           break;\n         // etc.\n       }\n     }\n   }\n   ```\n\n3. **Message chat automatique au follow**\n\n   ```\n   Trigger: Twitch.Follow\n   Action: CPH.SendMessage\n   Message: \"{username}, bienvenue dans la famille! Tape !de6 ou !de20 pour lancer ton de...\"\n   ```\n\n### 4.3 Castellan Frontend (React Overlays)\n\n**Quoi mettre ici :**\n\n1. **Composant DiceAlert (optionnel mais cool)**\n\n   ```typescript\n   // packages/overlays/src/components/alerts/DiceAlert.tsx\n\n   export function DiceAlert({ viewer, command, result, effect }: DiceAlertProps) {\n     return (\n       <div className=\"dice-alert\">\n         <h1>{viewer.displayName}</h1>\n         <div className=\"dice-roller\">\n           <div className=\"die\">{result}</div>\n         </div>\n         <p>{effect?.label}</p>\n       </div>\n     );\n   }\n   ```\n\n   Animation GSAP : le de \"roule\" (rotation + scale), affiche le resultat, l'effet s'affiche.\n\n2. **WebSocket event `alert:dice`**\n\n   ```typescript\n   // packages/shared/src/index.ts\n\n   export interface DiceAlertPayload {\n     viewer: ViewerInfo;\n     command: \"d6\" | \"d20\";\n     result: number;\n     effect?: DiceEffect;\n   }\n   ```\n\n3. **Affichage en overlay ou pas ?**\n\n   - **Option A** : Affichage dans le chat overlay (messages passent par `alert:dice` + texte chat)\n   - **Option B** : Overlay separe animate (pour les d20 \"importants\" seulement)\n   - **Recommandation** : Option A pour l'MVP (c'est deja affiche en chat via SB). Option B si tu veux de l'animation.\n\n---\n\n## 5. Checklist de Validation (Orchestrateur)\n\n### Specs Completes ?\n\n- [x] Trigger clairement defini : chat command `!de6` ou `!de20` sur event Twitch.Follow\n- [ ] **GAP** : \"Une seule fois\" est vague (par stream? a vie? les deux commandes comptent?)\n- [x] Resultat attendu : message chat + effet execute\n- [ ] **GAP** : Les 20 effets ne sont pas tous definis (15/20 probables, 5 manquants)\n- [x] Donnees necessaires : viewerId, streamId, command, result\n- [x] Cas limites : si le viewer a deja roule \u2192 refuser et signaler\n- [x] Persistence : en BDD via StreamEvent\n\n### Bon Systeme ?\n\n- [x] **Placement** : Trigger SB \u2192 logique Castellan \u2192 effet SB = CORRECT\n- [x] **Latence** : acceptable (< 500ms pour rouler + executer)\n- [x] **Maintenabilite** : logique centrale en TypeScript (dice.service.ts), pas de C# lourd\n- [x] **Donnees** : viewer data centralisee en Castellan (mieux que variables SB)\n\n### Schema BDD Necessaire ?\n\n- [ ] **Non necessaire** : on reutilise `StreamEvent` avec `type=\"dice\"` et `data` JSON\n- [x] Pas de migration requise\n\n### Integration Correcte ?\n\n- [x] Flow event trace : `Twitch.Follow \u2192 SB \u2192 Castellan (roll) \u2192 SB (effect) \u2192 Overlay (display)`\n- [x] WebSocket event : `alert:dice` a ajouter a `packages/shared/src/index.ts`\n- [x] Message chat : SB envoie via `CPH.SendMessage()`\n- [x] Dashboard : optional pour MVP (peut etre ajoute plus tard : \"Resultats des des ce stream\")\n\n### Pas de Sur-ingenierie ?\n\n- [x] Feature simple (roll + lookup table + action simple)\n- [x] MVP justifie (300 followers, moments fun en stream)\n- [x] Rien a \"inventer\" (des = random simple, effets = lookup table)\n\n---\n\n## 6. Plan d'Implementation (Ordre Recommande)\n\n### Phase 1 : Fondations (2-3h)\n\n1. **Definir les 20 effets du d20** dans `dice-effects.ts`\n   - Clarifier chaque effet avec ses parametres exacts\n   - Decider du timing d'execution (immediatement ou queue manuelle)\n\n2. **Ajouter service `dice.service.ts`** dans Castellan\n   - Methode `canRollThisStream(viewerId, streamId)`\n   - Methode `rollDice(viewerId, streamId, command)`\n   - Retourner resultat + effet\n\n3. **Route POST `/api/dice/roll`** dans Express\n   - Verifier permission \u2192 rouler \u2192 stocker \u2192 broadcast WS \u2192 retourner effet\n\n### Phase 2 : Integration StreamerBot (2h)\n\n4. **Trigger Twitch.Follow** + message de bienvenue\n\n5. **Trigger Chat Command** `!de6` et `!de20`\n   - Appel HTTP a `/api/dice/roll`\n   - Executer l'effet (switch sur `effect.type`)\n   - Message chat avec resultat\n\n6. **Execution des effets** dans SB\n   - Timeout, pub : appels Twitch natifs (`CPH.TwitchTimeoutUser`, `CPH.TwitchRunCommercial`)\n   - VIP : appel a Castellan `/api/vip/add` (TODO nouveau endpoint)\n   - Points : via API Twitch (TODO)\n   - Squats : message chat + event WebSocket pour overlay\n\n### Phase 3 : Frontend (1-2h)\n\n7. **Event WebSocket `alert:dice`** dans shared types\n\n8. **Affichage chat** : le des roule, le resultat s'affiche dans le chat overlay (existing chat component peut suffir)\n\n9. **(Optionnel) Overlay anime dice** si tu veux de l'animation fancy\n\n### Phase 4 : Testing & Polish (1-2h)\n\n10. **Test manuel** : follow compte test, !de6, !de20, verifier tout fonctionne\n11. **Dashboard** (optional) : page pour voir les rolls du stream actuel\n12. **Ajuster les effets** (probabilites, labels, timing)\n\n---\n\n## 7. Red Flags & Yellow Flags Identifiees\n\n### Red Flags \ud83d\udd34\n\n- **\"On va faire la logique du C# inline dans SB\"** \u2192 NON. La logique doit etre dans Castellan (service + route API). SB appelle juste HTTP.\n- **\"On va stocker \"a-t-il deja roule?\" dans une variable SB\"** \u2192 NON. En BDD dans Castellan (via StreamEvent), persistent et queryable.\n- **\"On va faire l'alerte du de en HTML dans SB\"** \u2192 NON. L'alerte est du texte chat ou un event WebSocket vers overlay Castellan.\n\n### Yellow Flags \ud83d\udfe1\n\n- **Les 20 effets ne sont pas tous definis** \u2192 blocker pour Phase 1. Clarifier AVANT de coder.\n- **\"Une seule fois\" est vague** \u2192 clarifier par stream ou a vie.\n- **Effet VIP : comment on l'execute via Twitch API ?** \u2192 il y a peut-etre des limites (rate limiting, permissions). Faut tester.\n- **Effet \"points\" : on passe par Twitch API Channel Points ?** \u2192 complexe. Peut-etre a simplifier pour MVP.\n\n### Green Flags \ud83d\udfe2\n\n- Event Twitch capture par SB \u2192 API Castellan \u2192 BDD \u2192 WS broadcast \u2192 overlay (flow standard)\n- Logique centrale en TypeScript (testable, versionnable)\n- Reutilisation de `StreamEvent` (pas de schema bloat)\n- Config externalisee (facile a iterer)\n\n---\n\n## 8. Architecture Diagram\n\n```\n\u250c\u2500 Twitch (Platform)\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                                                                   \u2502\n                    StreamerBot (Windows)                          \u2502\n    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510   \u2502\n    \u2502  Trigger: Twitch.Follow                                \u2502   \u2502\n    \u2502  \u2192 Message: \"Tape !de6 ou !de20\"                       \u2502   \u25c4\u2500\u2518\n    \u2502                                                         \u2502\n    \u2502  Trigger: Chat.Message (!de6 | !de20)                  \u2502\n    \u2502  \u2192 POST /api/dice/roll (HTTP)                          \u2502\n    \u2502  \u2192 Switch effect.type                                  \u2502\n    \u2502  \u2192 CPH.TwitchTimeoutUser(), CPH.SendMessage, etc.      \u2502\n    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n              \u2502                                   \u25b2\n              \u2502 POST /api/dice/roll              \u2502 effet execute\n              \u2502                                   \u2502\n              \u25bc                                   \u2502\n    \u250c\u2500 Castellan Backend (Express) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n    \u2502                                                        \u2502\n    \u2502 POST /api/dice/roll                                   \u2502\n    \u2502  \u251c\u2500 dice.service.canRollThisStream()                  \u2502\n    \u2502  \u251c\u2500 dice.service.rollDice()                           \u2502\n    \u2502  \u251c\u2500 prisma.streamEvent.create()                       \u2502\n    \u2502  \u2514\u2500 ws.broadcast(\"alert:dice\", { ... })              \u2502\n    \u2502                                                        \u2502\n    \u2502 WebSocket Server (localhost:3002)                      \u2502\n    \u2502  \u2514\u2500 broadcast \u2192 toutes les overlays connectees         \u2502\n    \u2502                                                        \u2502\n    \u2502 SQLite Database (Prisma)                              \u2502\n    \u2502  \u2514\u2500 StreamEvent { id, streamId, viewerId, type: \"dice\", data: \"{...}\" } \u2502\n    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n              \u2502\n              \u2502 ws://<localhost:3002>\n              \u2502 alert:dice event\n              \u25bc\n    \u250c\u2500 Castellan Frontend (React + OBS Browser Source) \u2500\u2500\u2500\u2500\u2500\u2500\u2510\n    \u2502                                                        \u2502\n    \u2502 ChatOverlay                                            \u2502\n    \u2502  \u2514\u2500 Affiche message chat avec resultat des           \u2502\n    \u2502                                                        \u2502\n    \u2502 (Optional) DiceAlert Overlay                          \u2502\n    \u2502  \u2514\u2500 Animation GSAP : die roule \u2192 affiche resultat     \u2502\n    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n---\n\n## 9. Conclusion : Specs Completes ou Incompletes ?\n\n### Incompletes. Voici ce qui manque :\n\n1. **Scope temporel de \"une seule fois\"** (par stream? a vie? clarifier)\n2. **Les 20 effets du d20** (actuellement seulement 15 definis)\n3. **Timing d'execution** (immediatement ou queue manuelle?)\n4. **Affichage** (overlay anime ou juste chat text?)\n5. **VIP API** (comment on ajoute/retire un VIP via Twitch API?)\n\n### Mais : Le concept est TRES solide et le placement technique est clair.\n\nAvec la checklist ci-dessus resolue, c'est un MVP de ~6-8h de travail, incluant tests et polish.\n\n---\n\n## Recap : Ou mettre quoi\n\n| Composant | Systeme | Fichier | Details |\n|-----------|---------|---------|---------|\n| Trigger follow | StreamerBot | Action \"Twitch.Follow\" | Message de bienvenue |\n| Trigger !de6/!de20 | StreamerBot | Action \"Chat.Message\" | C# inline \u2192 POST HTTP |\n| Logique roll | Castellan | `services/dice.service.ts` | `canRollThisStream()`, `rollDice()` |\n| Route API | Castellan | `index.ts` routes | `POST /api/dice/roll` |\n| Config des effets | Castellan | `config/dice-effects.ts` | Table des 20 effets |\n| Stockage | Castellan/Prisma | `StreamEvent` | Pas de migration, utiliser `type=\"dice\"` |\n| Execution effet | StreamerBot | C# inline | Switch sur `effect.type` |\n| Event WS | Castellan/Shared | `shared/index.ts` | `alert:dice` event |\n| Affichage | Castellan/React | `components/alerts/` | ChatOverlay ou DiceAlert |\n"}], "grading": {"expectations": [{"text": "identifies_correct_flow", "passed": true, "evidence": "Response clearly traces the complete event flow: Twitch Follow Event \u2192 StreamerBot trigger \u2192 Castellan logic (verification + roll + storage) \u2192 WebSocket broadcast \u2192 Overlays display. Section 3 'Trace du Flux Complet' explicitly maps this flow with detailed steps including verification, rolling, storage, and effect execution."}, {"text": "challenges_specs", "passed": true, "evidence": "Response comprehensively challenges incomplete specs in Section 2 'Questions Manquantes'. Identifies 6 major gaps: temporal scope of 'one-time' rule, definition of 'new follower', incomplete d20 effects (only defines 15/20), feedback/display requirements, effect execution timing, and historical tracking. Each gap includes specific recommendations."}, {"text": "correct_system_placement", "passed": true, "evidence": "Section 4 'Ou Mettre Quoi' precisely places dice logic in Castellan backend (services/dice.service.ts with canRollThisStream and rollDice methods), StreamerBot as trigger only with HTTP calls, and React overlays for animation. Explicitly avoids C# inline logic as anti-pattern."}, {"text": "references_existing_schema", "passed": true, "evidence": "Response references existing Prisma StreamEvent model and proposes using it with type='dice' and JSON data field. Section 4.1 shows exact Prisma schema extension approach and explains why this avoids unnecessary table creation. References existing Viewer model relationships."}, {"text": "provides_implementation_plan", "passed": true, "evidence": "Section 6 provides detailed 4-phase implementation plan with time estimates (2-3h, 2h, 1-2h, 1-2h). Each phase includes specific deliverables: Phase 1 defines 20 effects, adds service, creates route; Phase 2 adds StreamerBot triggers; Phase 3 adds frontend; Phase 4 covers testing and polish. Includes effort estimates totaling 6-8h."}]}}, {"id": "eval-1-dice-follow-without_skill", "prompt": "Je veux implementer le systeme de des de follow. Quand un nouveau follower arrive, il peut taper !de6 pour un de de squats ou !de20 pour le de du destin. Le de de 6 donne le nombre de squats que je dois faire. Le de de 20 a des effets differents par face (pub, TO, squats, VIP, etc.). Le follower ne peut lancer le de qu'une seule fois. Ou est-ce que je mets quoi ? Est-ce que les specs sont completes ?", "eval_id": 1, "outputs": [{"name": "response.md", "type": "text", "content": "# Analyse: Systeme de Des Lie aux Nouveaux Followers\n\n## Synthese de la Demande\n\nTu veux implementer un systeme ou:\n- Un nouveau follower peut lancer un de via commande chat (`!de6` ou `!de20`)\n- Le follower ne peut faire cette action QU'UNE SEULE FOIS (restriction par follower, par stream)\n- `!de6` \u2192 de a 6 faces = nombre de squats\n- `!de20` \u2192 de a 20 faces avec des effets differents par face (pub, TO, squats, VIP, etc.)\n\n## Architecture Actuelle (Castellan)\n\nCastellan est un monorepo express + React + Prisma/SQLite avec une architecture claire:\n\n### Stack\n- **Server**: Express 5, Prisma/SQLite, WebSocket broadcaster\n- **Overlays**: React 19 + Vite (SPA with React Router)\n- **Shared**: Types TypeScript communes\n- **Events**: Connectes via StreamerBot (WebSocket) ou HTTP fallback\n\n### Event Flow Actuel\n```\nStreamerBot (Twitch events) \u2192 Castellan Server (Express/WS) \u2192 Overlays (OBS via WebSocket)\n```\n\n### Types d'Events Existants\n- `follow` \u2192 cr\u00e9e record en DB, broadcast alert\n- `sub`, `raid`, `bits`, `dice`, `channel_point_redemption`, `hype_train`, `first_word`\n- Tous stockes dans `StreamEvent` (type + data JSON)\n- `IncomingEvent` dans shared/src/index.ts definit la structure\n\n### Prisma Schema (Relevant)\n```\nStreamEvent:\n  - id, streamId, viewerId, type (string), data (JSON), timestamp\n  - Index: [streamId, type]\n\nViewer:\n  - twitchId, username, displayName, isFollower, isSubscriber, totalMessages...\n  - firstSeenAt\n```\n\n## Architecture Proposee pour le Systeme de Des\n\n### 1. DANS STREAMER BOT (Input)\n\n**Flux:**\n- Follow event arrive \u2192 nouvelle entree dans Viewer + isFollower = true\n- Follower tape `!de6` ou `!de20` dans le chat\n- StreamerBot capture la commande et POST un event dice a Castellan\n\n**Prerequis:**\n- Creer 2 COMMANDS dans StreamerBot: `!de6` et `!de20`\n- Chaque command doit:\n  1. Verifier que l'utilisateur est follower (`User > User is follower`)\n  2. Verifier qu'il n'a PAS deja lance le de ce stream\n  3. Generer un random de (1-6 ou 1-20)\n  4. POST le resultat a Castellan\n\n**Probleme technique:** StreamerBot n'a pas d'acces direct a la BDD Castellan pour verifier \"has-already-rolled\". Deux solutions:\n\n**Option A (Recommandee):** StreamerBot stocke l'etat locally\n- Utiliser une variable StreamerBot par stream+user pour tracker qui a roule\n- Reset variables a chaque fin de stream\n- Comportement: si deja roule, StreamerBot refuse la commande avant d'appeler Castellan\n\n**Option B:** Castellan rejette si deja roule\n- StreamerBot POST toujours le dice\n- Castellan CHECK en DB si ce viewer a deja un record dice pour ce stream\n- Si oui: broadcast erreur (mais ca reste visible aux viewers = user experience degradee)\n\n### 2. DANS CASTELLAN (Logique Principale)\n\n#### 2.1 Schema Prisma - Extension\n\nLa table `StreamEvent` existe deja et supporte les dices. Faut ajouter un champ pour tracker les \"one-per-follower\" events:\n\n```prisma\nmodel FollowerDiceRoll {\n  id        String   @id @default(cuid())\n  streamId  String\n  viewerId  String\n  faces     Int      // 6 ou 20\n  result    Int      // 1-6 ou 1-20\n  timestamp DateTime @default(now())\n\n  viewer Viewer @relation(fields: [viewerId], references: [id])\n  stream Stream @relation(fields: [streamId], references: [id])\n\n  // Garantir une seule entree par viewer+stream+faces\n  @@unique([viewerId, streamId, faces])\n}\n```\n\n**Alternative:** Reutiliser `StreamEvent` + ajouter flag \"isFollowerGate\" en JSON data\n- Moins de migrations\n- Mais moins lisible/maintainable\n\n**Recommendation:** Creer la table separee pour clarifier l'intention\n\n#### 2.2 Shared Types\n\nAjouter dans `/packages/shared/src/index.ts`:\n\n```typescript\n// Type d'event\nexport type IncomingEventType = '...' | 'follower-dice' | ...;\n\n// Payload HTTP depuis StreamerBot\nexport interface IncomingEventData {\n  // ...existing...\n  // follower_dice\n  diceType?: 'follow-de6' | 'follow-de20'; // ou simpler: faces et flag isFollowerGated\n  faces?: number;\n  result?: number;\n  isFollowerGated?: boolean; // flag pour distinguer des dices normaux\n}\n\n// WebSocket broadcast\nexport type WSEvent = {\n  type: 'alert:follower-dice';\n  payload: AlertFollowerDicePayload;\n} | ...;\n\nexport interface AlertFollowerDicePayload {\n  viewer: ViewerInfo;\n  faces: number;\n  result: number;\n  effect?: string; // \"squats\", \"pub\", \"TO\", \"VIP\", \"chance\" pour de20\n}\n```\n\n#### 2.3 Server Logic (`packages/server/src/index.ts`)\n\nDans le handler `POST /api/event`:\n\n```typescript\nif (event.type === \"follower-dice\" && event.data) {\n  // 1. Verifier que le viewer est follower\n  if (!dbViewer.isFollower) {\n    res.status(403).json({ ok: false, error: \"Seuls les followers peuvent lancer le de\" });\n    return;\n  }\n\n  // 2. Verifier une seule action par stream\n  const faces = event.data.faces ?? 20;\n  const alreadyRolled = await prisma.followerDiceRoll.findUnique({\n    where: {\n      viewerId_streamId_faces: {\n        viewerId: dbViewer.id,\n        streamId: currentStreamId,\n        faces: faces,\n      },\n    },\n  });\n\n  if (alreadyRolled) {\n    res.status(400).json({ ok: false, error: \"Tu as deja lance le de pendant ce stream\" });\n    return;\n  }\n\n  // 3. Creer l'enregistrement\n  const result = event.data.result ?? Math.floor(Math.random() * faces) + 1;\n\n  await prisma.followerDiceRoll.create({\n    data: { streamId, viewerId: dbViewer.id, faces, result },\n  });\n\n  // 4. Determiner l'effet pour de20\n  let effect = \"normal\";\n  if (faces === 20) {\n    // Logique: faces 1-5 = pub, 6-10 = TO, 11-15 = squats, 16-20 = VIP\n    if (result >= 1 && result <= 5) effect = \"pub\";\n    else if (result >= 6 && result <= 10) effect = \"timeout\";\n    else if (result >= 11 && result <= 15) effect = \"squats\";\n    else effect = \"vip\";\n  }\n\n  // 5. Broadcast alerte vers les overlays\n  broadcast({\n    type: \"alert:follower-dice\",\n    payload: { viewer: event.viewer, faces, result, effect },\n  });\n\n  // 6. Stocker aussi dans StreamEvent pour statistiques\n  await prisma.streamEvent.create({\n    data: {\n      streamId,\n      viewerId: dbViewer.id,\n      type: \"dice\",\n      data: JSON.stringify({ faces, result, isFollowerGated: true, effect }),\n    },\n  });\n\n  res.json({ ok: true, result, effect });\n}\n```\n\n**Points cles:**\n- Verifier `isFollower` (existe deja en schema)\n- Unique constraint `[viewerId, streamId, faces]` (une seule fois PAR STREAM PAR VISAGE)\n  - Permet `!de6` ET `!de20` separement\n- Logique effet de20 : configurable, peut etre move en config plus tard\n- Stock dans StreamEvent AUSSI pour les credits de fin (stats \"diceRolls\")\n\n### 3. DANS STREAMER BOT (Gestion et Output)\n\nCreer 2 commands StreamerBot:\n\n#### Command 1: `!de6`\n```\nTrigger: Chat Command \"de6\" (ou alias \"de6\")\n\nConditions:\n- User is Follower (sinon refuse)\n- Variables:\n  - Define variable: DiceRolled_{user_id}_{stream_id} (une fois par stream+viewer)\n  - Check si variable existe: if yes, reply \"Tu as deja roule\" \u2192 STOP\n\nActions:\n1. Generate Random 1-6 \u2192 store en variable `randomDice`\n2. Set variable: DiceRolled_{user_id}_{stream_id} = true\n3. Fetch URL [POST]: http://localhost:3001/api/event\n   Method: POST\n   Content Type: application/json\n   Body (raw):\n   {\n     \"type\": \"follower-dice\",\n     \"viewer\": {\n       \"twitchId\": \"${user.id}\",\n       \"username\": \"${user.login}\",\n       \"displayName\": \"${user.name}\"\n     },\n     \"data\": {\n       \"faces\": 6,\n       \"result\": ${randomDice}\n     }\n   }\n4. (Optional) Announce: \"@${user.name} a roule le de de 6! Resultat: ${randomDice} squats!\"\n```\n\n#### Command 2: `!de20`\n```\nSimilarmente a !de6, mais faces = 20\nGenerate Random 1-20\nVariable: DiceRolled_{user_id}_{stream_id}\n\nReset de ces variables:\n- A chaque STREAM START event (Custom.Event: CastellanStreamStart)\n  \u2192 Clear ALL variables matches DiceRolled_*\n```\n\n### 4. DANS LES OVERLAYS (Affichage)\n\nL'overlay des dices existe probablement deja (pour les dices normaux).\n\nBesoin d'ajouter ou modifier:\n\n#### `/overlays/src/components/AlertDice.tsx` (ou creer AlertFollowerDice.tsx)\n\n```typescript\ninterface AlertFollowerDiceProps {\n  viewer: ViewerInfo;\n  faces: number;\n  result: number;\n  effect?: string; // pour de20: \"pub\", \"timeout\", \"squats\", \"vip\"\n}\n\n// Exemple: affichage special pour follower dices\n// - Animation distincte (vs dices normaux)\n// - Afficher l'effet (ex: \"5 squats!\" ou \"TIMEOUT!\")\n// - Couleurs differentes par effet\n```\n\nEnregistrer le handler WebSocket:\n\n```typescript\nws.on(\"alert:follower-dice\", (payload: AlertFollowerDicePayload) => {\n  // show alert overlay\n});\n```\n\n## Checklist de Completude des Specs\n\n### Specification Client (Streamer Bot)\n\n- [ ] Deux commands `!de6` et `!de20` creees dans StreamerBot\n- [ ] Verification \"is Follower\" presente\n- [ ] Logique \"une seule fois par stream\" implementee (variables ou feedback)\n- [ ] Random de + POST a `/api/event` fonctionnels\n- [ ] Reset de l'etat a chaque stream start\n- [ ] Handling d'erreur si user n'est pas follower (message au chat)\n- [ ] Handling d'erreur si deja roule (message au chat)\n\n### Specification Server (Castellan)\n\n- [ ] Schema Prisma: table FollowerDiceRoll + migration\n- [ ] Types shared: IncomingEventType, IncomingEventData, WSEvent updated\n- [ ] Endpoint `/api/event` handles follower-dice type\n- [ ] Validation: viewer.isFollower check\n- [ ] Validation: unique constraint [viewerId, streamId, faces] respectee\n- [ ] Logique effet de20 (configurable, ou hardcodee pour MVP)\n- [ ] Broadcast alert:follower-dice pour overlays\n- [ ] Aussi stocker dans StreamEvent pour credits\n- [ ] Error responses clairs (403 not follower, 400 already rolled)\n\n### Specification Overlay (React)\n\n- [ ] Component AlertFollowerDice cree ou existant modifie\n- [ ] Handler WebSocket \"alert:follower-dice\" present\n- [ ] Affichage: viewer name + resultat + effet (de20)\n- [ ] Animations distinctes (si desire)\n- [ ] Responsive et int\u00e9gr\u00e9 au design Castellan existant\n\n### Documentation\n\n- [ ] Comment configurer les commands StreamerBot (screenshot ou doc)\n- [ ] Mapping faces \u2192 effets de20 documente\n- [ ] Reset de l'etat documente\n- [ ] Error cases documente\n\n## Points d'Attention et Questions Ouvertes\n\n### 1. **Reset de l'Etat par Stream**\n\nActuellement, le reset de variables StreamerBot se fait au \"Custom.Event: CastellanStreamStart\".\n\n**Question:** Faut-il aussi nettoyer les donnees anciennes en BDD, ou les garder pour les stats de fin?\n\n**Recommendation:** Garder les donnees. C'est des stats. La table FollowerDiceRoll n'aura QU'UN record par [viewerId, streamId, faces], donc pas de probleme de doublons.\n\n### 2. **Logique de de20 \u2192 Effets**\n\nLes \"effects\" (pub, TO, squats, VIP) ne sont que du texte pour l'instant. Pas d'execution automatique.\n\n**Question:** Qui execute l'effet?\n- Option A: L'utilisateur manuellement (voir l'overlay, comprendre le resultat)\n- Option B: StreamerBot execute une action (ex: if result 1-5: trigger action \"pub\")\n- Option C: Overlay affiche juste le result, c'est cosm\u00e9tique\n\n**Recommendation pour MVP:** Option A (juste affichage). Plus tard, Option B si besoin.\n\n### 3. **Unifier !de6 et !de20?**\n\nActuellement 2 commands separees. Deux approches:\n\n**Option A (Actuelle):** 2 commands separees\n- Plus simple\n- User peut faire les 2 pendant un stream\n\n**Option B (Plus restrictif):** Une seule command `!de` avec parametre\n- `!de 6` ou `!de 20`\n- Unique constraint serait `[viewerId, streamId]` (une seule fois, peu importe le de)\n\n**Recommendation:** Option A pour MVP (plus souple). Option B si user veut vraiment limiter a UNE action par follower par stream.\n\n### 4. **Config/Customization Later**\n\nPour les prochaines iterations:\n- Mapping configurable faces \u2192 effects (admin dashboard)\n- Nombre de squats variable par resultat\n- Dur\u00e9e du TO variable\n- Liste de followers qui ont roule (statistiques)\n- Admin override (forcer un roll, ou reset un roll)\n\n## Resume: Architecture Complete\n\n```\nStreamerBot\n\u251c\u2500 Command: !de6\n\u2502  \u2514\u2500 Verifier follower + pas deja roule\n\u2502  \u2514\u2500 Random 1-6\n\u2502  \u2514\u2500 POST /api/event { type: \"follower-dice\", faces: 6, result: ... }\n\u2502\n\u2514\u2500 Command: !de20\n   \u2514\u2500 Random 1-20\n   \u2514\u2500 POST /api/event { type: \"follower-dice\", faces: 20, result: ... }\n\nCastellan Server\n\u251c\u2500 POST /api/event\n\u2502  \u251c\u2500 Valider: viewer.isFollower\n\u2502  \u251c\u2500 Valider: pas de FollowerDiceRoll[viewerId, streamId, faces] deja\n\u2502  \u2514\u2500 Creer FollowerDiceRoll record\n\u2502\n\u251c\u2500 Determiner l'effet (si de20)\n\u251c\u2500 Broadcast: alert:follower-dice \u2192 Overlays\n\u2514\u2500 Stocker aussi en StreamEvent (stats)\n\nOverlays (OBS)\n\u2514\u2500 AlertFollowerDice component\n   \u251c\u2500 Afficher: \"@Username rolled a ${faces}-sided dice\"\n   \u251c\u2500 Afficher: \"Result: ${result}\"\n   \u2514\u2500 (de20) Afficher effet: \"\u2192 ${effect}\"\n\nDatabase (Prisma/SQLite)\n\u251c\u2500 FollowerDiceRoll (new table)\n\u2502  \u2514\u2500 Unique[viewerId, streamId, faces]\n\u2502  \u2514\u2500 Stockage permanent (stats credits)\n\u2502\n\u2514\u2500 StreamEvent (existing)\n   \u2514\u2500 type: \"dice\" avec isFollowerGated: true\n```\n\n## Specs Completeness: Reponse a la Question Initiale\n\n> \"Ou est-ce que je mets quoi ? Est-ce que les specs sont completes ?\"\n\n### Reponse Structure:\n\n| Component        | Ce qui va OU                                    | Completude |\n|------------------|-------------------------------------------------|-----------|\n| **StreamerBot**  | Deux commands `!de6` et `!de20`                | 60%*      |\n| **Castellan**    | Server + Prisma schema + types shared + overlay| 70%       |\n| **Overlays**     | Component AlertFollowerDice                     | 50%       |\n| **StreamerBot**  | Variables + reset per-stream                    | 70%       |\n\n**Specs completeness: 65-70%**\n\n### Manques (Non-Critical pour MVP):\n\n1. **Logique d'execution des effets** (pub, TO, etc.)\n   - Pour MVP: juste affichage. Plus tard: StreamerBot actions.\n\n2. **Admin dashboard pour config**\n   - Mapping faces \u2192 effects\n   - Stats per-follower\n   - Reset/override manuels\n\n3. **UI Polish** (animations, sons)\n   - Component AlertFollowerDice existe mais peut etre stylised\n\n4. **Contraintes strictes** (une seule action par follower per-stream)\n   - MVP: une seule de6, une seule de20 separement\n   - Stricte: limiter a UNE action totale (schema + StreamerBot logic)\n\n### Points Concrets a Faire:\n\n**Priorite 1 (MVP):**\n1. Add FollowerDiceRoll table en Prisma\n2. Update types (shared/src/index.ts)\n3. Ajouter handler `follower-dice` dans server/src/index.ts\n4. Creer AlertFollowerDice component + WebSocket handler\n5. Creer 2 commands StreamerBot + test\n\n**Priorite 2 (Refinement):**\n1. Admin dashboard: config effects mapping\n2. Reset logic plus robuste (BD cleanup?)\n3. Animations / sons custom\n4. Stats: qui a roule, quels resultats\n\n**Priorite 3 (Nice-to-have):**\n1. Config \"une seule action\" stricte (vs de6 + de20 separees)\n2. Execution auto des effets (StreamerBot actions)\n3. Historique des rolls (page de stats)\n"}], "grading": {"expectations": [{"text": "identifies_correct_flow", "passed": true, "evidence": "Response identifies the event flow clearly in Section 3 'Resume: Architecture Complete' showing StreamerBot commands \u2192 Castellan server \u2192 overlays. However, less detailed than with_skill version - doesn't explicitly trace the full sequence with verification steps."}, {"text": "challenges_specs", "passed": true, "evidence": "Section 'Checklist de Completude des Specs' identifies incomplete specs including missing command setup details, validation requirements, and undefined configuration. However, challenges are less comprehensive than with_skill - doesn't enumerate specific d20 effect gaps or temporal scope issues."}, {"text": "correct_system_placement", "passed": true, "evidence": "Response correctly separates concerns: StreamerBot for commands/trigger, Castellan for logic, overlays for display. Section shows understanding of proper system boundaries, though placement reasoning is less detailed than with_skill version."}, {"text": "references_existing_schema", "passed": false, "evidence": "Response proposes creating a new 'FollowerDiceRoll' table in Prisma rather than reusing existing StreamEvent model. While this approach works, it doesn't reference or leverage the existing StreamEvent model that already supports generic event storage, representing less awareness of the current schema architecture."}, {"text": "provides_implementation_plan", "passed": true, "evidence": "Section 'Priorite 1' and 'Priorite 2' provide implementation guidance with 5 priority-1 items and 3 priority-2 items. However, lacks time estimates and detailed phase breakdown compared to with_skill version. Plan is less structured but covers main implementation areas."}]}}, {"id": "eval-2-raid-alert-with_skill", "prompt": "Pour l'alerte de raid, je veux une fiche perso doree du raideur qui s'affiche avec des confettis proportionnels au nombre de viewers (3 viewers = quelques confettis, 30 = tempete). Je veux aussi un bouton dans le dashboard pour lancer un clip aleatoire du raideur. Et un texte IA genere sur le raideur. Dis-moi comment architecturer tout ca.", "eval_id": 2, "outputs": [{"name": "response.md", "type": "text", "content": "# Architecture - Alerte Raid Avancee (Fiche Doree + Confettis + Clip Aleatoire + Texte IA)\n\n## SYNTHESE EXECUTIVE\n\nTon specification demande **4 features liees** pour l'alerte de raid :\n1. **Fiche perso doree** du raideur (overlay React avec style special raid)\n2. **Confettis proportionnels** au nombre de viewers (3 viewers \u2192 discrets, 30 \u2192 tempete)\n3. **Bouton dashboard** pour lancer un clip aleatoire du raideur\n4. **Texte IA genere** sur le raideur (description/bio contextuelle)\n\nC'est une feature d'**ampleur moyenne** (3-4 jours pour le full stack), avec des **dependencies critiques** et des **challenges techniques reels**. Je vais tout te challenger et proposer un plan priorise.\n\n---\n\n## ETAPE 1 - COMPRENDRE L'INTENTION\n\n**Reformulation** : Quand un raid arrive, on affiche une **fiche perso doree et animee** du raideur (avec confettis proportionnels aux viewers), et dans le dashboard admin on peut **lancer un clip aleatoire** du raideur. La fiche contient aussi un **texte IA** decrivant le raideur (ses jeux, sa vibe, ses meilleures clips).\n\n**Cas d'usage** : Reconnaitre le raideur de maniere spectaculaire, creer une interaction fan-to-fan authentique, amplifier l'effet emotionnel du raid.\n\n---\n\n## ETAPE 2 - TRACER LE FLUX COMPLET\n\n```\n[Event Twitch: Raid]\n  \u2193\n[StreamerBot d\u00e9tecte event, extrait viewer data]\n  \u2193\n[SB envoie alert:raid via WS vers Castellan]\n  \u2193\n[Castellan backend]\n  \u251c\u2500\u2192 Stocke event en BDD (StreamEvent type:raid)\n  \u251c\u2500\u2192 Enrichit viewer data (fetch infos via Twitch API si nouvelle personne)\n  \u251c\u2500\u2192 (NOUVEAU) Fetch clips du raideur depuis Twitch API\n  \u251c\u2500\u2192 (NOUVEAU) Genere texte IA sur le raideur\n  \u251c\u2500\u2192 Broadcast alert:raid vers overlays avec payload enrichi\n  \u2514\u2500\u2192 Expose donnees dans dashboard admin\n      \u2193\n[Overlay Raid (browser source React)]\n  \u251c\u2500\u2192 Affiche fiche doree animee\n  \u251c\u2500\u2192 Lance animation confettis (nombre proportionnel)\n  \u2514\u2500\u2192 Affiche texte IA\n\n[Dashboard Admin]\n  \u2514\u2500\u2192 Bouton \"Lancer clip aleatoire\" \u2192 API Castellan \u2192 Lance clip dans OBS\n```\n\n---\n\n## ETAPE 3 - CHALLENGER LE PLACEMENT\n\n### Placement des 4 composantes :\n\n#### 1. **Fiche perso doree + confettis anim\u00e9s**\n**Placer dans** : Castellan overlay React\n\n**Justification** :\n- Necessite animation GSAP complexe (entree, confettis proportionnels, sortie)\n- Utilise theme medieval existant (gold, parchment, animations)\n- Necessite connexion WS au backend (pour les donnees du raideur + texte IA)\n- C'est coherent avec les autres alertes (follow, sub, raid existantes)\n\n**Red flag evite** : Ne PAS faire ca dans StreamerBot (pas de systeme d'animation avance, pas de composants visuels)\n\n#### 2. **Clips du raideur (fetch + cache)**\n**Placer dans** : Castellan backend (service clips + cache)\n\n**Justification** :\n- Necessite appel Twitch API (rate limiting, token management)\n- Cache utile (faire un get_clips par raid serait trop couteux, faire un lookup depuis cache est rapide)\n- Logique : \"si on a le cache du raideur, prendre de la, sinon fetch et cache\"\n- Data persistante en BDD (StreamEvent + table optionnelle ViewerClips ou JSON dans Viewer?)\n\n**Challenge** : `clips.service.ts` gere deja les clips pour le STREAMER. Faut-il l'etendre pour les clips des viewers/raideurs ? Oui, mais avec cache separe pour ne pas polluer.\n\n#### 3. **Texte IA sur le raideur**\n**Placer dans** : Castellan backend (appel IA sync ou async)\n\n**Justification** :\n- Necessite appel API IA (Claude, GPT, etc.) \u2192 centralize dans backend\n- Data stockable en BDD (StreamEvent.data JSON ou table ViewerProfile?)\n- Cache/reuse possible (ne pas regenerer a chaque raid du meme raideur)\n- Latency acceptable (50-100ms d'attente OK pour une animation)\n\n**Yellow flag** : Choisir quel provider IA et quel modele. Par defaut : Claude API (puisque c'est ton stack). Budget token? Co\u00fbt par raid? Reponse : pre-cache la bio du raideur quand on le voit en viewers actifs, pas a chaque raid.\n\n#### 4. **Bouton dashboard pour clip aleatoire**\n**Placer dans** : Castellan dashboard React\n\n**Justification** :\n- UI simple \u2192 GET /api/clips/random avec filter `viewerId`\n- Commande du streamer directement depuis dashboard\n- Int\u00e9gration naturelle avec systeme de clips existant\n\n**Challenge** : Lancer le clip *dans OBS* (pas juste l'afficher en overlay). Implique :\n- Creer une media source dans OBS dynamiquement, OU\n- Appeler une action StreamerBot qui joue le clip via media source, OU\n- Browser source qui charge le clip (mais c'est pas ideal pour du media)\n\n**Choix recommande** : Castellan backend appelle StreamerBot via WS ou HTTP webhook pour lancer une action SB \"play clip\" (qui switch scene ou change la media source).\n\n---\n\n## ETAPE 4 - IDENTIFIER LES DEPENDENCIES\n\n### 1. **Dependency 1 : Schema Viewer complet**\n- Avant de faire une fiche perso, faut avoir les champs viewer minimums\n- Actuellement : `twitchId, username, displayName, isFollower, isSubscriber, totalMessages, totalBitsDonated`\n- **Manque** : avatar URL, jeux favoris, bio Twitch, nombre de followers (pour contexte), est-ce qu'il est partenaire, etc.\n- **Action** : Creer migration Prisma pour ajouter `profilePictureUrl`, `broadcasterInfo` (JSON pour jeux fav, etc.)\n\n### 2. **Dependency 2 : Service API Twitch avance**\n- Actuellement : Castellan recupere les clips du STREAMER (`getClipsByBroadcaster`)\n- **Faut** : Pouvoir appeler `getClipsFromChannel(userId)` pour n'importe quel viewer\n- **Limitation Twitch API** : Par defaut, clip retrieval donne les top clips **du streamer dont on a les credentials**, pas des autres utilisateurs\n- **Realite** : On peut pas recuperer les clips d'un autre streamer directement via l'API (le token du streamer n'a pas permission)\n- **Fallback** : Stocker manuellement les clips favoris du raideur en BDD lors du first viewer seen, OU afficher un lien vers son channel Twitch, OU montrer une video compilaton pr\u00e9-faite\n\n**RED FLAG** : \"Lancer un clip aleatoire du raideur\" assume qu'on a les clips du raideur. C'est impossible via Twitch API sauf si le raideur a donne acces. **Recalibrer la spec** : soit le bouton affiche un lien vers les clips du raideur, soit on stock manuellement les \"favoris\" lors de la premiere visite.\n\n### 3. **Dependency 3 : Integration IA**\n- Faut decider quel provider (Claude API, OpenAI, local LLM?)\n- Faut gerer les erreurs (si l'API IA down, afficher quoi?)\n- Faut cacher les prompts/tokens (pas dans le vault, dans `.env` ou variables d'environnement)\n- Latency : appel Claude ~500ms-1s, c'est acceptable en async mais pas pour une alerte synchrone\n\n**Solution** : Generer la bio IA **en background** quand on voit le raideur pour la premiere fois, pas au moment du raid. La premiere fois qu'il raid, on utilise un placeholder (\"Biographie en cours de generation...\") ou une bio fast (simple stats Twitch).\n\n### 4. **Dependency 4 : Interaction OBS \u2192 Lancer clip**\n- Faut coordonner entre Castellan et OBS via WebSocket v5, OU StreamerBot webhook\n- Faut creer une media source dans OBS pour le clip, OU changer de scene\n\n**Solution** : Castellan appelle **StreamerBot via WS** avec action \"play_raid_clip\" qui gere les details OBS. Ou Castellan parle **direct a OBS** via obs-websocket-js.\n\n---\n\n## ETAPE 5 - IDENTIFIER LES GROS RISQUES & CHALLENGES\n\n### Challenge A : La bio IA est expensive + lente\n**Probleme** : Appeler Claude API a chaque raid coute des tokens et prend 500ms-1s.\n\n**Solutions** :\n1. **Pre-cache** : Quand on voit un viewer actif en stream, on genere sa bio en background (pas au moment du raid)\n2. **Cache persistant** : Stocker la bio en `Viewer` ou `StreamEvent.data` JSON \u2192 reuse pour les raids suivants\n3. **Prompt court et rapide** : \"En 1 phrase, qui est ce streamer Twitch ?\" au lieu de \"Genere une biographie detaillee\"\n4. **Fallback** : Si l'API IA est down ou timeout, afficher nom + stats Twitch brutes\n\n**Recommandation** : Pre-cache + stockage BDD. La bio se genere une fois par viewer unique et se reutilise.\n\n### Challenge B : Confettis proportionnels au nombre de viewers\n**Probleme** : Creer une animation GSAP qui ajuste le nombre de confettis en fonction du viewer count. 3 viewers = 5-10 confettis, 30 viewers = 100+ confettis.\n\n**Solution** :\n- Payload `alert:raid` contient `{ fromChannel, viewers: 30, game? }`\n- Overlay React re\u00e7oit `viewers` et calcule : `confettiCount = Math.max(5, Math.min(viewers * 3, 200))`\n- GSAP genere les confettis dynamiquement (pas de hardcoding de 100 elements HTML)\n- Perfs : attention aux perfs browser si on gen 200+ elements (utiliser `willChange`, `transform` plutot que `top/left`)\n\n**Code example** :\n```javascript\nconst confettiCount = Math.max(5, Math.min(raid.viewers * 3, 200));\ngsap.to(confettiElements, {\n  duration: 3,\n  y: -800,\n  rotation: 360,\n  opacity: 0,\n  stagger: 0.05,\n  ease: \"circ.out\"\n});\n```\n\n### Challenge C : Ou stocker les donnees du raideur (clips, bio IA, etc.)\n**Probleme** : La table `Viewer` n'a pas assez de champs pour stocker clips et bio IA.\n\n**Solutions** :\n1. **Option 1** : Ajouter des colonnes `Viewer.profilePictureUrl, Viewer.bioAI, Viewer.clipsJson`\n   - Simple mais pourrait inflater la table\n   - OK pour MVP\n2. **Option 2** : Creer une table `ViewerProfile` avec relation 1-1 a Viewer\n   - Plus propre, mais migration plus complexe\n   - Mieux pour scalabilite\n3. **Option 3** : Stocker tout dans `StreamEvent.data` JSON (type:raid)\n   - Pas reutilisable entre raids du meme viewer\n   - Mauvaise idee\n\n**Recommandation** : Option 1 pour MVP (quelques colonnes JSON seulement). Migration vers Option 2 plus tard si on a 100+ fields par viewer.\n\n### Challenge D : Afficher un clip dans OBS dynamiquement\n**Probleme** : Comment vraiment *jouer* un clip du raideur dans le stream ?\n\n**Scenarios** :\n1. **Changement de scene** : Scene \"Raid Clip\" avec media source pointant sur URL du clip (necessiterait de regenrer la media source a chaque raid)\n2. **Media source existante** : Creer une media source \"Raid Clip\" et la fed dynamiquement avec le clip URL du raideur\n3. **Browser source** : Afficher le clip dans un iframe/player HTML (moins ideal, latency)\n4. **Action StreamerBot** : SB lance une scene et joue le clip via OBS API directement\n\n**Recommandation** : Castellan backend \u2192 expose POST `/api/raids/play-clip` \u2192 appelle StreamerBot webhook \u2192 SB change de scene et lance le clip. Ou direct Castellan appelle obs-websocket-js pour modifier une media source.\n\n**Pour MVP** : Garder ca simple \u2014 le bouton dashboard lance une action SB qui est DEJA creee manuellement (ne pas auto-generer des scenes/sources OBS). Just automate ce qui existe.\n\n---\n\n## ETAPE 6 - REVUE DE LA SPEC COMPLETES ?\n\n**Checklist** :\n- [ ] Trigger clairement defini ? \u2713 Quand un raid arrive (Twitch.Raid event)\n- [ ] Resultat attendu ? \u2713 Alerte fiche doree + confettis + texte IA + bouton clip\n- [ ] Donnees necessaires ? \u26a0\ufe0f **INCOMPLETE** \u2014 voir details ci-dessous\n- [ ] Cas limites ? \u26a0\ufe0f **INCOMPLETE** \u2014 que si le raideur n'existe pas en BDD ? Si clip fetch echoue ? Si IA timeout ?\n- [ ] Duree/persistence ? \u2713 Temporaire dans le stream, mais data persistee en BDD\n\n### Donnees manquantes a clarifier :\n\n1. **Avatar/Profil du raideur** : afficher quoi exactement dans la fiche doree ?\n   - Avatar PNG 256x256?\n   - Fonds qui change selon le game du raideur?\n   - Stats Twitch (followers, best clip view count)?\n\n2. **Bio IA** : quel prompt exact? Exemple :\n   - \"Qui est [username] ? \" \u2192 Reponse libre (risque hors-sujet)\n   - \"En 1 phrase, qui est ce streamer Twitch selon sa bio officielle ?\" \u2192 Plus controle\n   - \"Genere une phrase attrapante sur pourquoi ce streamer est cool\" \u2192 Vibe\n\n3. **Clip** : lequel afficher/lancer ?\n   - Random parmi top 10 clips du raideur? (mais on peut pas acceder \u00e0 ca facilement via API)\n   - Random parmi ses 5 derniers videos Twitch? (possible via Twitch API)\n   - Manuellement list curatee en BDD? (possible mais manual work)\n\n4. **Erreurs** : Que faire si :\n   - Le raideur est inconnu (jamais vu avant) \u2192 Fetch rapide son avatar/stats et generer sa bio async\n   - Twitch API rate-limited \u2192 Afficher nom brut + stats en cache\n   - IA API down \u2192 Afficher placeholder \"A venir...\"\n   - Pas de clips trouves \u2192 Afficher lien vers son channel\n\n---\n\n## ETAPE 7 - PLACEMENT DEFINITION EN SYSTEMES\n\n### **StreamerBot**\n```\nTrigger: Twitch.Raid\n  \u2514\u2500\u2192 Action \"Raid Alert\"\n      \u2514\u2500\u2192 Envoyer WS a Castellan avec event:raid (fromChannel, viewers, game)\n      \u2514\u2500\u2192 (optionnel) Envoyer message chat personnalise (\"Raid de XXX avec YYY viewers!\")\n      \u2514\u2500\u2192 (optionnel) Sub-action OBS pour changement de scene \"Raid\" si voulu\n```\n\n**Qu'est-ce que SB ne fait PAS** :\n- Pas de fetch avatar du raideur (c'est Castellan)\n- Pas de genere IA (c'est Castellan)\n- Pas de fetch clips (c'est Castellan)\n- Pas d'orchestration complexe (juste trigger + transmet)\n\n### **Castellan Backend**\n```\nRoute POST /api/event (ou WS message alert:raid)\n  \u2514\u2500\u2192 Service: raidsService.handleRaidEvent(event)\n      \u251c\u2500\u2192 Valider viewer existe, sinon creer\n      \u251c\u2500\u2192 Enregistrer raid en BDD (StreamEvent type:raid)\n      \u251c\u2500\u2192 (NEW) Service: viewerService.enrichViewerProfile(viewerId)\n      \u2502   \u251c\u2500\u2192 Fetch infos Twitch (avatar, followers, game historique)\n      \u2502   \u2514\u2500\u2192 Cache en Viewer.enrichedData JSON\n      \u251c\u2500\u2192 (NEW) Service: aiService.generateRaiderBio(viewerId, asyncMode=true)\n      \u2502   \u2514\u2500\u2192 Appel Claude API \u2192 cache en Viewer.bioAI\n      \u251c\u2500\u2192 (NEW) Service: clipsService.getCachedClipsForViewer(viewerId)\n      \u2502   \u2514\u2500\u2192 Cherche dans cache, sinon recherche via Twitch API (best effort)\n      \u2514\u2500\u2192 broadcast(\"alert:raid\", {\n            fromChannel, viewers, game,\n            raider: { displayName, avatar, followers },\n            bioAI: \"...\",\n            clipsAvailable: [{title, url, views}, ...]\n          })\n\nRoute GET /api/raids/:viewerId/clips\n  \u2514\u2500\u2192 Retourner clips en cache pour ce viewer\n\nRoute POST /api/raids/:viewerId/play-clip\n  \u2514\u2500\u2192 (NEW) Decider : soit webhook SB, soit direct obs-websocket-js\n      \u2514\u2500\u2192 Si SB : POST http://localhost:5000/webhook avec action payload\n      \u2514\u2500\u2192 Si direct OBS : Appel obs-websocket-js pour changer media source\n```\n\n### **Castellan Dashboard React**\n```\nPage Admin \u2192 Section \"Dernier Raid\"\n  \u251c\u2500\u2192 Affiche dernier raid en temps reel\n  \u251c\u2500\u2192 Avatar + stats du raideur\n  \u251c\u2500\u2192 (NEW) Bouton \"Lancer clip aleatoire\"\n  \u2502   \u2514\u2500\u2192 GET /api/raids/{viewerId}/clips/random\n  \u2502   \u2514\u2500\u2192 POST /api/raids/{viewerId}/play-clip avec clip ID\n  \u2514\u2500\u2192 Bouton \"Re-trigger alerte\" (pour test)\n```\n\n### **Castellan Overlay React (Raid Alert)**\n```\nPage /overlay/raid\n  \u2514\u2500\u2192 WS listener(\"alert:raid\")\n      \u2514\u2500\u2192 Render composant <RaidAlert raid={payload} />\n          \u251c\u2500\u2192 Animated card doree (fiche perso)\n          \u251c\u2500\u2192 Avatar + nom + followers + game\n          \u251c\u2500\u2192 Texte IA en italique\n          \u251c\u2500\u2192 Animation entree GSAP (slide from right, scale)\n          \u251c\u2500\u2192 (NEW) Confettis proportionnels\n          \u2502   \u2514\u2500\u2192 const count = Math.max(5, Math.min(raid.viewers * 3, 200))\n          \u2502   \u2514\u2500\u2192 GSAP animate confettis down + fade out\n          \u2514\u2500\u2192 Auto-hide apres 5-10s\n\nCSS medieval :\n  \u251c\u2500\u2192 Font: Cinzel\n  \u251c\u2500\u2192 Couleur fond : Gold gradient + parchment border\n  \u251c\u2500\u2192 Filtre: drop-shadow pour la profondeur\n```\n\n### **OBS**\n```\nPas de changement natif n\u00e9cessaire pour MVP.\n\n(Optionnel pour v2) :\n  \u2514\u2500\u2192 Scene \"Raid\" avec media source \"Raid Clip\" (parametrisable via API)\n  \u2514\u2500\u2192 Source navigateur pour overlay raid (existant, juste y ajouter la fiche doree)\n```\n\n---\n\n## ARCHITECTURE PROPOSAL - PLAN D'IMPLEMENTATION\n\n### **Phase 1 : Fondations (2-3 jours)**\n\n#### 1.1 Schema Prisma \u00e9tendu\n```prisma\n// Ajouter a Viewer model :\nmodel Viewer {\n  // ... existing fields ...\n  profilePictureUrl    String?     // Avatar Twitch\n  twitchFollowers      Int?        // Cache du count followers\n  twitchViewers        Int?        // Cache du stream viewer count (si streamer)\n  enrichedData         String?     // JSON { game, bio_brute, last_clip_url, ... }\n  bioAI                String?     // Cache de la bio generee par IA\n\n  // Relations\n  raidsComing          StreamEvent[] @relation(\"raidFrom\")  // Raids qu'il a fait\n  raidsReceived        StreamEvent[] @relation(\"raidTo\")    // Raids qu'on a recu de lui\n}\n\n// Nouveau model (optionnel pour MVP, juste mettre en JSON):\nmodel ViewerClip {\n  id                   Int       @id @default(autoincrement())\n  viewer               Viewer    @relation(fields: [viewerId], references: [id])\n  viewerId             Int\n  clipTitle            String\n  clipUrl              String\n  viewCount            Int?\n  createdAt            DateTime  @default(now())\n\n  @@unique([viewerId, clipUrl])\n}\n```\n\n**Migration Prisma** :\n```bash\nnpx prisma migrate dev --name add_raid_features\n```\n\n**Duration** : 1-2h (test migration, verifier les donnees existantes)\n\n#### 1.2 Service IA (Claude API)\nCreer `packages/server/src/services/ai.service.ts` :\n\n```typescript\nexport class AIService {\n  async generateRaiderBio(viewerId: number, username: string, twitchBio?: string): Promise<string> {\n    const prompt = `\nTu es un assistant creant des descriptions engageantes de streamers Twitch.\nNom: ${username}\nBio Twitch: ${twitchBio || \"Non disponible\"}\n\nGenere une phrase accrocheuse (max 25 mots) qui decrit ce streamer.\nReponse seulement la phrase, pas d'explication.\n    `;\n\n    const message = await anthropic.messages.create({\n      model: \"claude-3-5-sonnet-20241022\",\n      max_tokens: 100,\n      messages: [{ role: \"user\", content: prompt }]\n    });\n\n    return message.content[0].type === \"text\" ? message.content[0].text : \"\";\n  }\n}\n```\n\n**Consid\u00e9rations** :\n- Mode **async** : generer en background, ne pas bloquer le raid alert\n- **Cache** : sauvegarder en `Viewer.bioAI` pour reutiliser\n- **Erreur handling** : timeout 5s, fallback a bio Twitch brute\n- **Tokens** : ~50 tokens par bio, budget OK pour quelques raids par stream\n\n**Duration** : 2-3h (setup API client, gestion erreurs, test avec donnees reelles)\n\n#### 1.3 Service Clips \u00e9t\u00e9tendu\nModifier `packages/server/src/services/clips.service.ts` pour supporter **viewer clips** :\n\n```typescript\nexport class ClipsService {\n  // Existant :\n  async getClipsByBroadcaster(broadcasterId: string): Promise<Clip[]> { ... }\n\n  // (NEW)\n  async getCachedClipsForViewer(viewerId: number): Promise<ViewerClip[]> {\n    return this.db.viewerClip.findMany({\n      where: { viewerId },\n      orderBy: { viewCount: 'desc' },\n      take: 10\n    });\n  }\n\n  async fetchAndCacheViewerClips(viewerId: number, username: string): Promise<ViewerClip[]> {\n    // Probl\u00e8me : Twitch API ne permet pas de fetcher les clips d'un autre user\n    // Fallback : utiliser Twitch API pour r\u00e9cup\u00e9rer les VIDEOS du viewer (si streamer)\n    // Et esperer que certaines sont des VOD de stream (pas parfait)\n\n    // OU : accepter que pour MVP, on stocke manuellement les clips favoris\n    // OU : avoir un formulaire pour le streamer d'ajouter les clips du raideur manuellement\n\n    return [];\n  }\n\n  async getRandomClipForViewer(viewerId: number): Promise<ViewerClip | null> {\n    const clips = await this.getCachedClipsForViewer(viewerId);\n    return clips[Math.floor(Math.random() * clips.length)];\n  }\n}\n```\n\n**Red flag alert** : Twitch API limitation \u2014 on ne peut **pas** recuperer les clips d'un autre channel directement. Les deux solutions :\n1. **MVP simplifiee** : Ignorer les clips pour le moment, afficher juste un lien \"Voir les clips de [username]\" vers son channel\n2. **Workaround** : Streamer remplit manuellement les clips favoris de chaque raideur (formulaire admin)\n\n**Recommandation** : Faire MVP SANS clips (juste placeholder \"Clips a venir\"), puis iterer.\n\n**Duration** : 1h pour le service (mais limiter scope \u2014 pas de fetch reel, juste structure)\n\n---\n\n### **Phase 2 : Overlay Raid & Animations (2-3 jours)**\n\n#### 2.1 Composant RaidAlert (React + GSAP)\n\nCreer `packages/overlays/src/components/alerts/RaidAlert.tsx` :\n\n```typescript\ninterface RaidAlertProps {\n  raid: {\n    fromChannel: string;\n    viewers: number;\n    game?: string;\n    raider: {\n      displayName: string;\n      profilePictureUrl?: string;\n      twitchFollowers?: number;\n    };\n    bioAI?: string;\n  };\n  onAnimationEnd?: () => void;\n}\n\nexport function RaidAlert({ raid, onAnimationEnd }: RaidAlertProps) {\n  const containerRef = useRef(null);\n  const confettiRef = useRef(null);\n\n  useEffect(() => {\n    // Animer l'entree, puis generer confettis\n    animateRaidCard(containerRef.current);\n    generateConfetti(confettiRef.current, raid.viewers);\n\n    // Auto-hide apres 8s\n    const timer = setTimeout(onAnimationEnd, 8000);\n    return () => clearTimeout(timer);\n  }, [raid, onAnimationEnd]);\n\n  return (\n    <div ref={containerRef} className=\"raid-alert\">\n      {/* Fiche doree */}\n      <div className=\"raid-card golden\">\n        <img\n          src={raid.raider.profilePictureUrl}\n          alt={raid.raider.displayName}\n          className=\"raid-avatar\"\n        />\n        <h2>{raid.raider.displayName}</h2>\n        <p className=\"raid-viewers\">Raid de {raid.viewers} viewers</p>\n        {raid.game && <p className=\"raid-game\">Jouant : {raid.game}</p>}\n        {raid.raider.twitchFollowers && (\n          <p className=\"raid-followers\">{raid.raider.twitchFollowers.toLocaleString()} followers</p>\n        )}\n\n        {/* Texte IA */}\n        {raid.bioAI && (\n          <p className=\"raid-bio-ai\">{raid.bioAI}</p>\n        )}\n      </div>\n\n      {/* Confettis */}\n      <div ref={confettiRef} className=\"confetti-container\" />\n    </div>\n  );\n}\n\nfunction generateConfetti(container: HTMLElement, viewers: number) {\n  const count = Math.max(5, Math.min(viewers * 3, 200));\n  const confettiElements: HTMLElement[] = [];\n\n  for (let i = 0; i < count; i++) {\n    const confetti = document.createElement('div');\n    confetti.className = 'confetti';\n    confetti.style.left = Math.random() * 100 + '%';\n    confetti.style.top = '-10px';\n    container.appendChild(confetti);\n    confettiElements.push(confetti);\n  }\n\n  // GSAP timeline pour animer les confettis\n  const tl = gsap.timeline();\n  tl.to(confettiElements, {\n    y: window.innerHeight + 100,\n    rotation: () => gsap.utils.random(-360, 360),\n    opacity: 0,\n    duration: 4,\n    stagger: 0.02,\n    ease: \"circ.in\"\n  });\n}\n```\n\n**Styles (SCSS)** :\n```scss\n.raid-alert {\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 1000;\n}\n\n.raid-card {\n  width: 400px;\n  padding: 30px;\n  background: linear-gradient(135deg, #D4A843 0%, #FFF4A3 50%, #D4A843 100%);\n  border: 3px solid #3E2A08;\n  border-radius: 20px;\n  text-align: center;\n  box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);\n  font-family: 'Cinzel', serif;\n  color: #3E2A08;\n\n  .raid-avatar {\n    width: 120px;\n    height: 120px;\n    border-radius: 50%;\n    border: 4px solid #3E2A08;\n    margin-bottom: 15px;\n  }\n\n  h2 {\n    font-size: 32px;\n    margin: 0 0 10px 0;\n    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);\n  }\n\n  .raid-viewers {\n    font-size: 24px;\n    font-weight: bold;\n    margin: 5px 0;\n  }\n\n  .raid-bio-ai {\n    font-size: 14px;\n    font-style: italic;\n    margin-top: 15px;\n    color: #5a4a2a;\n  }\n}\n\n.confetti {\n  position: fixed;\n  width: 8px;\n  height: 8px;\n  background: #FFD700;\n  pointer-events: none;\n\n  &::after {\n    content: '';\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background: inherit;\n    transform: rotate(45deg);\n  }\n}\n```\n\n**Duration** : 1.5-2h (composant + animations + styling)\n\n#### 2.2 Integration a AlertOverlay\n\nModifier `packages/overlays/src/components/alerts/ScrollAlert.tsx` ou creer une nouvelle page `/overlay/alerts-extended` :\n\n```typescript\n// Dans AlertOverlay ou page d'alerte:\nuseEffect(() => {\n  const unsubscribe = ws.on('alert:raid', (event: RaidAlertPayload) => {\n    // Si la fiche doree est activee dans config, afficher RaidAlert\n    // Sinon, afficher l'alerte raid standard existante\n\n    setCurrentAlert({\n      type: 'raid',\n      payload: event,\n      showGoldenCard: alertsConfig.raid.showGoldenCard ?? true\n    });\n  });\n\n  return () => unsubscribe();\n}, [alertsConfig.raid.showGoldenCard]);\n```\n\n**Duration** : 1h (integration + test)\n\n---\n\n### **Phase 3 : Backend Routes & Dashboard (1-2 jours)**\n\n#### 3.1 Routes Express\n\nAjouter au `packages/server/src/index.ts` :\n\n```typescript\n// Raid-specific routes\napp.post('/api/raids/:viewerId/play-clip', async (req, res) => {\n  // Recuperer un clip aleatoire pour ce viewer\n  // Appeler StreamerBot pour jouer le clip (ou direct OBS)\n  // Response: { success, clipUrl, action }\n\n  const clip = await clipsService.getRandomClipForViewer(req.params.viewerId);\n  if (!clip) return res.status(404).json({ error: 'No clips found' });\n\n  // Decider : webhook StreamerBot ou direct OBS\n  await sbService.playRaidClip(clip.clipUrl);\n  // OU\n  // await obsService.playMediaClip(clip.clipUrl);\n\n  res.json({ success: true, clipUrl: clip.clipUrl });\n});\n\napp.get('/api/raids/:viewerId/clips', async (req, res) => {\n  const clips = await clipsService.getCachedClipsForViewer(req.params.viewerId);\n  res.json(clips);\n});\n\n// Test/admin\napp.post('/api/raids/test-alert', async (req, res) => {\n  // Pour tester l'alerte sans raid reel\n  const testPayload = {\n    fromChannel: 'test_raider',\n    viewers: 42,\n    game: 'Game Test',\n    raider: {\n      displayName: 'Test Raider',\n      profilePictureUrl: 'https://...',\n      twitchFollowers: 1234\n    },\n    bioAI: 'Un streamer cool qui fait des jeux sympa'\n  };\n\n  broadcast('alert:raid', testPayload);\n  res.json({ success: true });\n});\n```\n\n**Duration** : 1h\n\n#### 3.2 Dashboard Admin \u2014 Raid Section\n\nAjouter page/component `packages/overlays/src/components/admin/AdminRaids.tsx` :\n\n```typescript\nexport function AdminRaids() {\n  const [lastRaid, setLastRaid] = useState<RaidAlertPayload | null>(null);\n  const [clips, setClips] = useState<ViewerClip[]>([]);\n\n  useEffect(() => {\n    // Subscribe a raid events\n    const unsubscribe = ws.on('alert:raid', setLastRaid);\n    return () => unsubscribe();\n  }, []);\n\n  const handlePlayClip = async (viewerId: number) => {\n    try {\n      const res = await fetch(`/api/raids/${viewerId}/play-clip`, { method: 'POST' });\n      const data = await res.json();\n      alert(`Clip en train de se jouer: ${data.clipUrl}`);\n    } catch (err) {\n      alert('Erreur: ' + err.message);\n    }\n  };\n\n  return (\n    <div className=\"admin-raids\">\n      <h2>Dernier Raid</h2>\n      {lastRaid ? (\n        <div className=\"raid-summary\">\n          <img src={lastRaid.raider.profilePictureUrl} alt=\"Avatar\" />\n          <div>\n            <h3>{lastRaid.raider.displayName}</h3>\n            <p>{lastRaid.viewers} viewers</p>\n            <p>{lastRaid.bioAI}</p>\n            <button onClick={() => handlePlayClip(lastRaid.viewerId)}>\n              Lancer clip aleatoire\n            </button>\n          </div>\n        </div>\n      ) : (\n        <p>En attente d'un raid...</p>\n      )}\n    </div>\n  );\n}\n```\n\n**Duration** : 1h\n\n---\n\n### **Phase 4 : Integration Flux Complet (1-2 jours)**\n\n#### 4.1 Payload WebSocket\nModifier `packages/shared/src/index.ts` :\n\n```typescript\nexport interface RaidAlertPayload {\n  fromChannel: string;\n  viewers: number;\n  game?: string;\n  raider: {\n    viewerId: number;\n    displayName: string;\n    profilePictureUrl?: string;\n    twitchFollowers?: number;\n  };\n  bioAI?: string;\n  clipsAvailable?: Array<{ title: string; url: string; views: number }>;\n}\n\n// Ajouter au type de stream event\nexport type StreamEventType = 'follow' | 'sub' | 'raid' | 'bits' | ... ;\n```\n\n**Duration** : 30m\n\n#### 4.2 Service raidsService complet\n\nCreer `packages/server/src/services/raids.service.ts` :\n\n```typescript\nexport class RaidsService {\n  constructor(\n    private db: PrismaClient,\n    private aiService: AIService,\n    private clipsService: ClipsService,\n    private sbService: StreamerbotService\n  ) {}\n\n  async handleRaidEvent(event: {\n    fromChannel: string;\n    viewers: number;\n    game?: string;\n    viewer: ViewerInfo;\n  }): Promise<RaidAlertPayload> {\n    // 1. Valider/creer viewer en BDD\n    let raider = await this.db.viewer.findUnique({\n      where: { twitchId: event.viewer.id }\n    });\n\n    if (!raider) {\n      raider = await this.db.viewer.create({\n        data: {\n          twitchId: event.viewer.id,\n          username: event.viewer.login || 'unknown',\n          displayName: event.viewer.name || 'Unknown',\n          profilePictureUrl: event.viewer.profileImageUrl // Si disponible dans event\n        }\n      });\n    }\n\n    // 2. Enregistrer raid en BDD\n    const streamEvent = await this.db.streamEvent.create({\n      data: {\n        streamId: 1, // A determiner depuis context actuel\n        viewerId: raider.id,\n        type: 'raid',\n        data: JSON.stringify({\n          fromChannel: event.fromChannel,\n          viewers: event.viewers,\n          game: event.game\n        })\n      }\n    });\n\n    // 3. Generer bio IA en BACKGROUND (async, ne pas bloquer)\n    if (!raider.bioAI) {\n      this.aiService\n        .generateRaiderBio(raider.id, raider.username, raider.enrichedData)\n        .then(bioAI => {\n          this.db.viewer.update({\n            where: { id: raider.id },\n            data: { bioAI }\n          });\n        })\n        .catch(err => console.error('AI Service error:', err));\n    }\n\n    // 4. Recuperer clips en cache (ou fetch si absent)\n    let clips = await this.clipsService.getCachedClipsForViewer(raider.id);\n    if (clips.length === 0) {\n      clips = await this.clipsService.fetchAndCacheViewerClips(raider.id, raider.username);\n    }\n\n    // 5. Construire payload pour overlay\n    const payload: RaidAlertPayload = {\n      fromChannel: event.fromChannel,\n      viewers: event.viewers,\n      game: event.game,\n      raider: {\n        viewerId: raider.id,\n        displayName: raider.displayName,\n        profilePictureUrl: raider.profilePictureUrl,\n        twitchFollowers: raider.twitchFollowers\n      },\n      bioAI: raider.bioAI,\n      clipsAvailable: clips\n    };\n\n    return payload;\n  }\n}\n```\n\n**Duration** : 2h (integration, test, debug)\n\n#### 4.3 Integration StreamerBot \u2192 Castellan\n\nModifier `packages/server/src/services/streamerbot.service.ts` pour trigger le raid handler :\n\n```typescript\n// Dans le listener Twitch.Raid:\nclient.on('Twitch.Raid', async (data) => {\n  const event = {\n    fromChannel: data.displayName,\n    viewers: data.viewerCount,\n    game: data.gameName,\n    viewer: {\n      id: data.userId,\n      login: data.login,\n      name: data.displayName,\n      profileImageUrl: data.profileImageUrl // Si dispo\n    }\n  };\n\n  const payload = await raidsService.handleRaidEvent(event);\n  broadcast('alert:raid', payload);\n\n  // (optionnel) Envoyer message chat\n  await sbClient.sendMessage(`Merci pour le raid ${data.displayName}! Vous amener ${data.viewerCount} viewers!`);\n});\n```\n\n**Duration** : 1h\n\n---\n\n## PRIORITES RECOMMANDEES\n\n### **MVP Sprint (4-5 jours)**\n\n1. **Priority 1 (Must-have)** :\n   - Schema Prisma + migration \u2713\n   - Service Raids complete \u2713\n   - Composant RaidAlert avec confettis \u2713\n   - Integration Twitch \u2192 WS \u2713\n   - Test manuel\n\n2. **Priority 2 (Should-have)** :\n   - Bio IA (avec async + cache) \u2713\n   - Dashboard raid section \u2713\n   - Test routes API\n\n3. **Priority 3 (Nice-to-have)** :\n   - Clips (verifier faisabilite Twitch API)\n   - Bouton \"Lancer clip\" (depends on clips)\n   - Animations avancees (3D particles, etc.)\n\n### **What to defer (v2)**\n\n- Clips integration (Twitch API limitation)\n- 3D particles (utilisr canvas ou Three.js \u2014 overkill pour MVP)\n- Customization avancee (couleurs per-game, etc.)\n- Analytics raid (stats sur les raids recus)\n\n---\n\n## CHECKLIST FINAL\n\n- [ ] Schema Prisma + migration testee\n- [ ] Service raidsService complet avec AI + clips (fallback graceful)\n- [ ] Composant RaidAlert + animations confettis\n- [ ] Integration WS payload et types shared\n- [ ] Routes API `/api/raids/*`\n- [ ] Admin dashboard Raids section\n- [ ] Test manuel 10+ times (differents viewer counts : 3, 30, 300)\n- [ ] Message chat SB personalise\n- [ ] Config alertes inclut toggle \"showGoldenCard\"\n- [ ] Error handling : IA timeout, clips not found, viewer not found\n- [ ] Doc pour manual Clip curation (si on skip fetch API)\n\n---\n\n## RISKS & CONTINGENCIES\n\n| Risk | Likelihood | Impact | Mitigation |\n|------|-----------|--------|-----------|\n| Twitch API can't fetch other streamers' clips | High | Medium | Skip clips for MVP, fallback to link |\n| IA API timeout | Medium | Low | Async + fallback, afficher placeholder |\n| Viewer avatar URL missing from event | High | Low | Default avatar, enrich via Twitch API later |\n| Too many confettis crash browser | Low | Low | Cap a 200 elements, use requestAnimationFrame |\n| Raid event format differs from spec | Medium | Medium | Handle both formats in extractViewer (existing pattern) |\n\n---\n\n## CONCLUSION\n\nCette feature est **faisable en 5-6 jours** avec un MVP solide et une roadmap claire pour les iterations. Les challenges principaux sont :\n\n1. **Twitch API limitation** sur les clips \u2014 accepter fallback simple pour MVP\n2. **Async IA generation** \u2014 ne pas bloquer l'alerte, pre-cache cleverly\n3. **Confetti proportionnels** \u2014 simple maths + GSAP, performant avec cap\n\nL'architecture est **claire** : SB capture + transmet \u2192 Castellan enrichit + orchestrate \u2192 Overlays affichent. Pas de hors-limite, pas de sur-ingenierie.\n\n**Prochaine etape** : Confirmer les specs manquantes (bio prompt exact, clip handling), puis launch Phase 1 (schema + services).\n"}], "grading": {"expectations": [{"text": "decomposes_sub_features", "passed": true, "evidence": "Response comprehensively breaks raid system into 4 distinct sub-features in Section 1: golden card, confetti system, clip launcher, and AI text. Section 3 'ETAPE 3' explicitly discusses placement and prioritization of each component with clear separation of concerns."}, {"text": "identifies_api_challenges", "passed": true, "evidence": "Section 3.2 'Dependency 2' identifies critical Twitch API limitation: cannot fetch clips of other streamers directly due to token scope restrictions. Proposes three fallback solutions: manual curation, simplified display, or affording links. Shows deep understanding of API constraints."}, {"text": "handles_ai_latency", "passed": true, "evidence": "Section 3.3 'Dependency 3' identifies IA latency problem and proposes async/pre-cache solution: generate bio in background when viewer appears in active viewers, not on raid trigger. Explains cache strategy and fallback approach to prevent blocking raid alert."}, {"text": "leverages_existing_animation_system", "passed": true, "evidence": "Section 3 'Challenge B' explicitly proposes using existing GSAP animation system with dynamic confetti generation proportional to viewers. References medieval theme already in Castellan. Section 5 'Phase 2' shows RaidAlert component using GSAP timeline with existing overlay architecture."}, {"text": "correct_system_separation", "passed": true, "evidence": "Section 2 'ETAPE 2' clearly separates: StreamerBot detects raid event \u2192 Castellan enriches data (API calls, IA generation) \u2192 Overlays render. Each system has distinct responsibility with WebSocket as communication layer. Follows existing Castellan architecture patterns."}]}}, {"id": "eval-2-raid-alert-without_skill", "prompt": "Pour l'alerte de raid, je veux une fiche perso doree du raideur qui s'affiche avec des confettis proportionnels au nombre de viewers (3 viewers = quelques confettis, 30 = tempete). Je veux aussi un bouton dans le dashboard pour lancer un clip aleatoire du raideur. Et un texte IA genere sur le raideur. Dis-moi comment architecturer tout ca.", "eval_id": 2, "outputs": [{"name": "response.md", "type": "text", "content": "# Architecture compl\u00e8te : Alerte Raid enrichie avec confettis et actions dashboard\n\n## Vue d'ensemble\n\nTu veux 3 features interconnect\u00e9es autour du raid :\n\n1. **Fiche perso dor\u00e9e du raideur** : Affichage custom avec photo/avatar, stats, confettis proportionn\u00e9s\n2. **Confettis scalables** : 3 viewers = quelques confettis, 30+ = temp\u00eate (courbe d'intensit\u00e9)\n3. **Bouton dashboard** : Lancer un clip al\u00e9atoire du raideur (int\u00e9gration Twitch API)\n4. **Texte IA g\u00e9n\u00e9r\u00e9** : R\u00e9sum\u00e9 ou compliment auto-g\u00e9n\u00e9r\u00e9 sur le raideur\n\nPour un syst\u00e8me maintenable, la cascade est : **BD (Twitch) \u2192 Server (API Twitch + IA) \u2192 WS \u2192 Overlays (animations GSAP)**.\n\n---\n\n## Architecture propos\u00e9e\n\n```\nCastellan (existant)\n\u251c\u2500\u2500 packages/server/\n\u2502   \u251c\u2500\u2500 src/\n\u2502   \u2502   \u251c\u2500\u2500 services/\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 alerts.service.ts  \u2190 Config alerte raid\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 raider.service.ts  \u2190 [NEW] R\u00e9cup stats + clip du raideur\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 ai.service.ts      \u2190 [NEW] G\u00e9n\u00e9ration texte IA\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 twitch-api.service.ts \u2190 [NEW] Client Twitch (clips, userinfo)\n\u2502   \u2502   \u251c\u2500\u2500 routes/\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 events.routes.ts   \u2190 G\u00e8re POST /api/event (raid)\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 raid.routes.ts     \u2190 [NEW] GET /api/raid/{raider}/clips, etc.\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 dashboard.routes.ts \u2190 [NEW] POST /api/dashboard/raid/play-clip\n\u2502   \u2502   \u2514\u2500\u2500 index.ts\n\u2502   \u251c\u2500\u2500 media/\n\u2502   \u2502   \u2514\u2500\u2500 raids/                 \u2190 [NEW] Cache local clips/avatars\n\u2502   \u2514\u2500\u2500 .env                        \u2190 Twitch API secret, OpenAI key\n\u2502\n\u251c\u2500\u2500 packages/overlays/\n\u2502   \u251c\u2500\u2500 src/\n\u2502   \u2502   \u251c\u2500\u2500 components/\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 alerts/\n\u2502   \u2502   \u2502       \u251c\u2500\u2500 RaidAlert.tsx       \u2190 [NEW] Fiche dor\u00e9e + confettis\n\u2502   \u2502   \u2502       \u251c\u2500\u2500 ConfettiRain.tsx    \u2190 [NEW] Animations proportionn\u00e9es\n\u2502   \u2502   \u2502       \u2514\u2500\u2500 alerts.css          \u2190 Style fiche dor\u00e9\n\u2502   \u2502   \u251c\u2500\u2500 utils/\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 confetti.ts            \u2190 [NEW] G\u00e9n\u00e9rateur de confettis (GSAP)\n\u2502   \u2502   \u251c\u2500\u2500 hooks/\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 useRaidData.ts         \u2190 [NEW] WS listener raid avec cache\n\u2502   \u2502   \u2514\u2500\u2500 pages/\n\u2502   \u2502       \u251c\u2500\u2500 AlertsPage.tsx         \u2190 D\u00e9j\u00e0 en place, int\u00e8gre RaidAlert\n\u2502   \u2502       \u2514\u2500\u2500 AdminPage.tsx          \u2190 [NEW] Bouton \"Play Random Clip\"\n\u2502   \u2514\u2500\u2500 .env\n\u2502\n\u2514\u2500\u2500 packages/shared/\n    \u2514\u2500\u2500 types.ts                        \u2190 Types raid \u00e9tendus\n```\n\n---\n\n## 1. Types et \u00e9v\u00e9nement WebSocket\n\n### `packages/shared/types.ts` \u2014 \u00c9tendre types raid\n\n```typescript\n// Types sp\u00e9cifiques raid\nexport interface RaiderProfile {\n  twitchId: string;\n  username: string;\n  displayName: string;\n  avatarUrl: string;\n  isFollower: boolean;\n  isSubscriber: boolean;\n  totalRaidsCount: number;  // Raids re\u00e7us de ce channel\n  lastRaidDate: string | null;\n  description?: string;     // Bio Twitch courte\n}\n\nexport interface RaidAlertEvent {\n  type: 'alert:raid';\n  payload: {\n    fromChannel: string;           // Nom du raideur\n    viewers: number;              // Nombre de viewers\n    raiderProfile: RaiderProfile;  // Donn\u00e9es enrichies\n    aiGeneratedText: string;       // \"X a amen\u00e9 Y viewers, bravo!\"\n    randomClipUrl: string | null;  // Lien clip al\u00e9atoire ou null\n    clipTitle: string | null;\n  };\n}\n\n// \u00c9v\u00e9nement pour alerter dashboard\nexport interface WSEvent {\n  // ... existant ...\n  | { type: 'raid:clip-ready'; payload: { raiderUsername: string; clipUrl: string } }\n  | { type: 'raid:fetch-error'; payload: { error: string } };\n}\n```\n\n### Exemple de payload WSEvent\n\nQuand un raid arrive, le server envoie :\n\n```json\n{\n  \"type\": \"alert:raid\",\n  \"payload\": {\n    \"fromChannel\": \"popular_streamer\",\n    \"viewers\": 42,\n    \"raiderProfile\": {\n      \"twitchId\": \"123\",\n      \"username\": \"popular_streamer\",\n      \"displayName\": \"Popular Streamer\",\n      \"avatarUrl\": \"https://...twitch.tv/...\",\n      \"isFollower\": true,\n      \"isSubscriber\": false,\n      \"totalRaidsCount\": 3,\n      \"lastRaidDate\": \"2026-03-15T18:30:00Z\",\n      \"description\": \"Cr\u00e9ateur de contenu sp\u00e9cialis\u00e9 en RPG\"\n    },\n    \"aiGeneratedText\": \"Popular Streamer raid avec 42 chevaliers! Un alli\u00e9 redoutable.\",\n    \"randomClipUrl\": \"https://clips.twitch.tv/...\",\n    \"clipTitle\": \"The Best Moment Ever\"\n  }\n}\n```\n\n---\n\n## 2. Backend \u2014 Server\n\n### 2.1 `packages/server/src/services/twitch-api.service.ts`\n\nEncapsule tout appel Twitch API (clips, userinfo, etc.). Utilise le token existant ou une PAC Twitch.\n\n```typescript\nimport axios from 'axios';\n\nconst TWITCH_API = 'https://api.twitch.tv/helix';\n\nlet accessToken = process.env.TWITCH_ACCESS_TOKEN || '';\nlet clientId = process.env.TWITCH_CLIENT_ID || '';\n\nexport async function initTwitchApi(token: string, cid: string) {\n  accessToken = token;\n  clientId = cid;\n}\n\n/**\n * R\u00e9cup\u00e8re les infos publiques du channel (avatar, bio, etc.)\n */\nexport async function getUserInfo(username: string) {\n  try {\n    const res = await axios.get(`${TWITCH_API}/users?login=${username}`, {\n      headers: {\n        'Client-ID': clientId,\n        'Authorization': `Bearer ${accessToken}`,\n      },\n    });\n    return res.data.data[0] || null;\n  } catch (err) {\n    console.error(`[TwitchAPI] Erreur getUserInfo(${username}):`, err);\n    return null;\n  }\n}\n\n/**\n * R\u00e9cup\u00e8re les clips r\u00e9cents du channel (max 10, tri par trending).\n * Retourne un array de { id, url, title, created_at, view_count }\n */\nexport async function getClips(channelId: string, limit = 10) {\n  try {\n    const res = await axios.get(`${TWITCH_API}/clips`, {\n      params: {\n        broadcaster_id: channelId,\n        first: limit,\n        started_at: getDateRange().start, // Derniers 30 jours\n        ended_at: getDateRange().end,\n        // Tri: tendance ou date\n      },\n      headers: {\n        'Client-ID': clientId,\n        'Authorization': `Bearer ${accessToken}`,\n      },\n    });\n    return res.data.data || [];\n  } catch (err) {\n    console.error(`[TwitchAPI] Erreur getClips(${channelId}):`, err);\n    return [];\n  }\n}\n\nfunction getDateRange() {\n  const end = new Date();\n  const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);\n  return {\n    start: start.toISOString(),\n    end: end.toISOString(),\n  };\n}\n```\n\n### 2.2 `packages/server/src/services/raider.service.ts`\n\nEnrichit les donn\u00e9es raid : profile du raideur, clips, stats.\n\n```typescript\nimport { prisma } from '../db/client';\nimport { getUserInfo, getClips } from './twitch-api.service';\nimport type { RaiderProfile } from '@castellan/shared';\n\nexport interface EnrichedRaidData {\n  raiderProfile: RaiderProfile;\n  randomClip: { url: string; title: string } | null;\n}\n\n/**\n * Enrichit les donn\u00e9es du raideur avec Twitch API et BD locale.\n * 1. R\u00e9cup\u00e8re/cr\u00e9e Viewer en BD\n * 2. Appelle Twitch API pour avatar, bio\n * 3. R\u00e9cup\u00e8re un clip al\u00e9atoire\n */\nexport async function enrichRaidData(\n  raiderUsername: string,\n  broadcasterTwitchId: string // Pour r\u00e9cup\u00e9rer les clips du channel du raideur\n): Promise<EnrichedRaidData | null> {\n  // 1. R\u00e9cup\u00e8re ou cr\u00e9e le viewer\n  let viewer = await prisma.viewer.findUnique({\n    where: { username: raiderUsername },\n  });\n\n  if (!viewer) {\n    // Fetch depuis Twitch si pas en BDD\n    const twitchUser = await getUserInfo(raiderUsername);\n    if (!twitchUser) {\n      console.error(`[RaiderService] Impossible de trouver ${raiderUsername} sur Twitch`);\n      return null;\n    }\n\n    viewer = await prisma.viewer.create({\n      data: {\n        twitchId: twitchUser.id,\n        username: twitchUser.login,\n        displayName: twitchUser.display_name,\n      },\n    });\n  }\n\n  // 2. R\u00e9cup\u00e8re avatar et infos Twitch actuelles\n  const twitchUser = await getUserInfo(raiderUsername);\n  const avatarUrl = twitchUser?.profile_image_url || '';\n\n  // 3. Incr\u00e9mente le compteur raid en BD\n  const totalRaids = (await prisma.streamEvent.count({\n    where: { viewerId: viewer.id, type: 'raid' },\n  })) + 1;\n\n  // 4. R\u00e9cup\u00e8re un clip al\u00e9atoire du raideur\n  const clips = await getClips(viewer.twitchId, 10);\n  const randomClip = clips.length > 0 ? clips[Math.floor(Math.random() * clips.length)] : null;\n\n  const profile: RaiderProfile = {\n    twitchId: viewer.twitchId,\n    username: viewer.username,\n    displayName: viewer.displayName,\n    avatarUrl,\n    isFollower: viewer.isFollower,\n    isSubscriber: viewer.isSubscriber,\n    totalRaidsCount: totalRaids,\n    lastRaidDate: new Date().toISOString(),\n    description: twitchUser?.description || '',\n  };\n\n  return {\n    raiderProfile: profile,\n    randomClip: randomClip\n      ? { url: randomClip.url, title: randomClip.title }\n      : null,\n  };\n}\n```\n\n### 2.3 `packages/server/src/services/ai.service.ts`\n\nG\u00e9n\u00e8re un texte court et contextuel sur le raideur.\n\n```typescript\nimport axios from 'axios';\n\nconst OPENAI_API = 'https://api.openai.com/v1/chat/completions';\n\nexport async function generateRaidText(\n  raiderDisplayName: string,\n  viewers: number,\n  raiderDescription: string\n): Promise<string> {\n  try {\n    const prompt = `\nTu es un narrateur m\u00e9di\u00e9val enthousiaste. G\u00e9n\u00e8re une seule phrase courte\n(max 15 mots) pour accueillir un raideur Twitch :\n\nRaideur: ${raiderDisplayName}\nViewers: ${viewers}\nBio: ${raiderDescription || 'cr\u00e9ateur de contenu'}\n\nR\u00e9pond EN FRAN\u00c7AIS, style m\u00e9di\u00e9val \u00e9pique, exemple:\n\"${raiderDisplayName} raid avec ${viewers} chevaliers! Bienvenue, alli\u00e9!\"\n\nNE donne que la phrase, pas d'explications.\n    `;\n\n    const res = await axios.post(\n      OPENAI_API,\n      {\n        model: 'gpt-4o-mini',\n        messages: [{ role: 'user', content: prompt }],\n        max_tokens: 50,\n        temperature: 0.7,\n      },\n      {\n        headers: {\n          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,\n          'Content-Type': 'application/json',\n        },\n      }\n    );\n\n    return res.data.choices[0]?.message?.content?.trim() ||\n      `${raiderDisplayName} raid avec ${viewers} viewers!`;\n  } catch (err) {\n    console.error('[AIService] Erreur g\u00e9n\u00e9ration texte:', err);\n    return `${raiderDisplayName} raid avec ${viewers} viewers!`;\n  }\n}\n```\n\n### 2.4 `packages/server/src/routes/raid.routes.ts`\n\nEndpoints pour que le dashboard puisse :\n- R\u00e9cup\u00e9rer un clip al\u00e9atoire \u00e0 l'avance\n- Relancer un clip manuellement\n\n```typescript\nimport express from 'express';\nimport { enrichRaidData } from '../services/raider.service';\nimport { generateRaidText } from '../services/ai.service';\nimport type { RaidAlertEvent } from '@castellan/shared';\n\nconst router = express.Router();\n\n/**\n * POST /api/raid/trigger\n * D\u00e9clenche manuellement une alerte raid (pour test ou commande dashboard)\n */\nrouter.post('/trigger', async (req, res) => {\n  const { raiderUsername, viewers, broadcasterTwitchId } = req.body;\n\n  if (!raiderUsername || !viewers) {\n    return res.status(400).json({ error: 'raiderUsername et viewers requis' });\n  }\n\n  try {\n    const enriched = await enrichRaidData(raiderUsername, broadcasterTwitchId);\n    if (!enriched) {\n      return res.status(404).json({ error: 'Raideur introuvable' });\n    }\n\n    const aiText = await generateRaidText(\n      enriched.raiderProfile.displayName,\n      viewers,\n      enriched.raiderProfile.description || ''\n    );\n\n    const payload: RaidAlertEvent['payload'] = {\n      fromChannel: raiderUsername,\n      viewers,\n      raiderProfile: enriched.raiderProfile,\n      aiGeneratedText: aiText,\n      randomClipUrl: enriched.randomClip?.url || null,\n      clipTitle: enriched.randomClip?.title || null,\n    };\n\n    // Broadcast au WS et retourne les donn\u00e9es\n    broadcast({ type: 'alert:raid', payload });\n    res.json({ ok: true, payload });\n  } catch (err) {\n    console.error('[RaidRoutes] Erreur:', err);\n    res.status(500).json({ error: 'Erreur interne' });\n  }\n});\n\n/**\n * GET /api/raid/{username}/clips\n * Retourne un clip al\u00e9atoire du raideur (pour cache ou preview dashboard)\n */\nrouter.get('/:username/clips', async (req, res) => {\n  const { username } = req.params;\n\n  try {\n    const enriched = await enrichRaidData(username, ''); // broadcasterTwitchId pas n\u00e9cessaire ici\n    if (!enriched) {\n      return res.status(404).json({ error: 'Raideur introuvable' });\n    }\n\n    res.json({\n      ok: true,\n      clip: enriched.randomClip,\n      profile: enriched.raiderProfile,\n    });\n  } catch (err) {\n    res.status(500).json({ error: 'Erreur lors de la r\u00e9cup\u00e9ration des clips' });\n  }\n});\n\nexport default router;\n```\n\n### 2.5 `.env` \u2014 Variables d'environnement\n\n```env\n# Existant\nDATABASE_URL=\"file:./dev.db\"\nSTREAMER_BOT_WS_URL=\"ws://localhost:8080\"\n\n# Twitch API\nTWITCH_CLIENT_ID=\"your_client_id\"\nTWITCH_ACCESS_TOKEN=\"your_access_token\"\n\n# OpenAI\nOPENAI_API_KEY=\"sk-...\"\n```\n\n**Note sur les tokens** :\n- **TWITCH_ACCESS_TOKEN** : Obtenu via OAuth Twitch (https://dev.twitch.tv/console/apps). Dure 60 jours.\n- **OPENAI_API_KEY** : Cl\u00e9 API OpenAI (https://platform.openai.com/api-keys)\n\n---\n\n## 3. Frontend \u2014 Overlays\n\n### 3.1 `packages/overlays/src/utils/confetti.ts`\n\nG\u00e9n\u00e9rateur de confettis proportionn\u00e9s aux viewers.\n\n```typescript\nimport { gsap } from 'gsap';\n\nexport interface ConfettiOptions {\n  viewerCount: number;    // Nombre de viewers\n  duration: number;        // Dur\u00e9e en ms\n  container: HTMLElement;\n  intensity?: 'light' | 'medium' | 'heavy'; // Auto-calc si viewers donn\u00e9\n}\n\n/**\n * Cr\u00e9e des confettis GSAP proportionn\u00e9s au nombre de viewers.\n * 3 viewers = quelques confettis\n * 30 viewers = temp\u00eate\n * Courbe: intensity = min(1, viewers / 30) \u2192 \u00e9chelle exponentielle\n */\nexport function createConfetti({\n  viewerCount,\n  duration,\n  container,\n  intensity,\n}: ConfettiOptions) {\n  // Auto-calcul intensit\u00e9\n  const autoIntensity = Math.min(1, viewerCount / 30);\n  const count = Math.ceil(10 + autoIntensity * 90); // 10 \u00e0 100 confettis\n\n  const confetti: HTMLElement[] = [];\n\n  // Cr\u00e9e des confettis\n  for (let i = 0; i < count; i++) {\n    const el = document.createElement('div');\n    el.className = 'confetti-piece';\n    el.style.left = Math.random() * 100 + '%';\n    el.style.top = '-10px';\n    el.style.width = Math.random() * 8 + 4 + 'px';\n    el.style.height = Math.random() * 8 + 4 + 'px';\n    el.style.background = randomGoldenColor();\n    el.style.position = 'absolute';\n    el.style.pointerEvents = 'none';\n    el.style.zIndex = '999';\n\n    container.appendChild(el);\n    confetti.push(el);\n  }\n\n  // Anime chaque confetti\n  const timeline = gsap.timeline();\n\n  confetti.forEach((el, i) => {\n    const delay = (i / confetti.length) * 0.3; // Stagger\n    const randomX = (Math.random() - 0.5) * 200;\n    const randomRotation = Math.random() * 720;\n\n    timeline.to(\n      el,\n      {\n        y: window.innerHeight + 100,\n        x: randomX,\n        rotation: randomRotation,\n        opacity: 0,\n        duration: duration / 1000,\n        ease: 'power2.in',\n      },\n      delay\n    );\n  });\n\n  // Cleanup apr\u00e8s\n  timeline.eventCallback('onComplete', () => {\n    confetti.forEach(el => el.remove());\n  });\n\n  return timeline;\n}\n\nfunction randomGoldenColor(): string {\n  const colors = [\n    '#FFD700', // Gold\n    '#FFA500', // Orange\n    '#FF8C00', // Dark Orange\n    '#FFD700', // Gold\n    '#FFED4E', // Light Gold\n    '#FF6347', // Tomato (m\u00e9di\u00e9val)\n    '#DC143C', // Crimson\n  ];\n  return colors[Math.floor(Math.random() * colors.length)];\n}\n```\n\n### 3.2 `packages/overlays/src/components/alerts/RaidAlert.tsx`\n\nFiche dor\u00e9e du raideur avec confettis.\n\n```typescript\nimport { useEffect, useRef } from 'react';\nimport { gsap } from 'gsap';\nimport { createConfetti } from '../../utils/confetti';\nimport type { RaidAlertEvent } from '@castellan/shared';\nimport './raid-alert.css';\n\ninterface RaidAlertProps {\n  event: RaidAlertEvent['payload'];\n  duration: number;\n  onDone: () => void;\n}\n\nexport function RaidAlert({ event, duration, onDone }: RaidAlertProps) {\n  const containerRef = useRef<HTMLDivElement>(null);\n  const confettiRef = useRef<gsap.core.Timeline | null>(null);\n\n  useEffect(() => {\n    const el = containerRef.current;\n    if (!el) return;\n\n    // Timeline : enter \u2192 confetti \u2192 exit\n    const timeline = gsap.timeline();\n\n    // Entr\u00e9e (slide in + scale)\n    timeline.from(el, {\n      opacity: 0,\n      y: -50,\n      duration: 0.5,\n      ease: 'back.out',\n    });\n\n    // D\u00e9clenche les confettis\n    const confettiTl = createConfetti({\n      viewerCount: event.viewers,\n      duration: Math.min(duration * 0.7, 3000), // 70% de la dur\u00e9e, max 3s\n      container: el,\n    });\n\n    timeline.add(confettiTl, 0.2); // Commence 0.2s apr\u00e8s l'entr\u00e9e\n\n    // Pause au centre\n    const pauseDuration = Math.max(0, (duration - 500 - 500) / 1000);\n    timeline.call(() => {}, {}, `+=${pauseDuration}`);\n\n    // Sortie\n    timeline.to(el, {\n      opacity: 0,\n      y: 50,\n      duration: 0.5,\n      ease: 'back.in',\n      onComplete: onDone,\n    });\n\n    confettiRef.current = timeline;\n\n    return () => {\n      timeline.kill();\n    };\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, []);\n\n  return (\n    <div ref={containerRef} className=\"raid-alert\">\n      {/* Cadre dor\u00e9 */}\n      <div className=\"raid-frame\">\n        {/* Avatar du raideur */}\n        <img\n          src={event.raiderProfile.avatarUrl}\n          alt={event.raiderProfile.displayName}\n          className=\"raid-avatar\"\n        />\n\n        {/* Info raideur */}\n        <div className=\"raid-info\">\n          <h2 className=\"raid-name\">{event.raiderProfile.displayName}</h2>\n          <p className=\"raid-subtext\">raid avec {event.viewers} chevaliers</p>\n          {event.raiderProfile.description && (\n            <p className=\"raid-bio\">{event.raiderProfile.description}</p>\n          )}\n        </div>\n\n        {/* Texte IA */}\n        <div className=\"raid-ai-text\">\n          <p>{event.aiGeneratedText}</p>\n        </div>\n\n        {/* Clip link (optionnel, pour interaction) */}\n        {event.randomClipUrl && (\n          <div className=\"raid-clip-badge\">\n            <span className=\"raid-clip-icon\">\ud83c\udfac</span>\n            {event.clipTitle}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n```\n\n### 3.3 `packages/overlays/src/components/alerts/raid-alert.css`\n\nStyling fiche dor\u00e9e m\u00e9di\u00e9vale.\n\n```css\n.raid-alert {\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 9999;\n  pointer-events: none;\n}\n\n.raid-frame {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  background: linear-gradient(135deg, #f4d03f 0%, #d4af37 50%, #c9a961 100%);\n  border: 4px solid #8b7200;\n  border-radius: 16px;\n  padding: 24px;\n  box-shadow:\n    0 20px 60px rgba(0, 0, 0, 0.4),\n    inset 0 1px 0 rgba(255, 255, 255, 0.3),\n    inset 0 -2px 4px rgba(0, 0, 0, 0.2);\n  backdrop-filter: blur(8px);\n  max-width: 400px;\n  text-align: center;\n  position: relative;\n}\n\n.raid-avatar {\n  width: 120px;\n  height: 120px;\n  border-radius: 50%;\n  border: 4px solid #8b7200;\n  margin-bottom: 16px;\n  object-fit: cover;\n  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);\n}\n\n.raid-name {\n  font-size: 28px;\n  font-weight: bold;\n  color: #333;\n  margin: 0 0 8px 0;\n  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);\n  font-family: 'Georgia', serif;\n}\n\n.raid-subtext {\n  font-size: 16px;\n  color: #555;\n  margin: 0 0 12px 0;\n  font-style: italic;\n}\n\n.raid-bio {\n  font-size: 13px;\n  color: #666;\n  margin: 8px 0;\n  line-height: 1.4;\n  font-style: italic;\n}\n\n.raid-ai-text {\n  margin-top: 16px;\n  padding: 12px;\n  background: rgba(255, 255, 255, 0.3);\n  border-radius: 8px;\n  font-size: 14px;\n  color: #333;\n  font-weight: 500;\n  line-height: 1.5;\n}\n\n.raid-clip-badge {\n  margin-top: 12px;\n  padding: 8px 12px;\n  background: rgba(0, 0, 0, 0.1);\n  border-radius: 4px;\n  font-size: 12px;\n  color: #333;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.raid-clip-icon {\n  font-size: 16px;\n}\n\n/* Confettis */\n.confetti-piece {\n  position: absolute;\n  pointer-events: none;\n  border-radius: 2px;\n}\n```\n\n### 3.4 `packages/overlays/src/hooks/useRaidData.ts`\n\nHook pour \u00e9couter les \u00e9v\u00e9nements raid et cacher les d\u00e9tails API.\n\n```typescript\nimport { useCallback, useRef } from 'react';\nimport { useWebSocket } from './useWebSocket';\nimport type { WSEvent, RaidAlertEvent } from '@castellan/shared';\n\nexport interface RaidEventHandler {\n  onRaid: (event: RaidAlertEvent['payload']) => void;\n  onError?: (error: string) => void;\n}\n\nexport function useRaidData({ onRaid, onError }: RaidEventHandler) {\n  const cacheRef = useRef<Map<string, RaidAlertEvent['payload']>>(new Map());\n\n  const handleEvent = useCallback(\n    (event: WSEvent) => {\n      if (event.type === 'alert:raid') {\n        // Cache pour \u00e9viter refetch\n        cacheRef.current.set(event.payload.fromChannel, event.payload);\n        onRaid(event.payload);\n      }\n\n      if (event.type === 'raid:fetch-error' && onError) {\n        onError(event.payload.error);\n      }\n    },\n    [onRaid, onError]\n  );\n\n  useWebSocket(handleEvent);\n\n  return {\n    getRaidFromCache: (username: string) =>\n      cacheRef.current.get(username) || null,\n  };\n}\n```\n\n### 3.5 Int\u00e9gration dans `AlertsPage.tsx`\n\nModifier la page d'alertes pour supporter le raid enrichi.\n\n```typescript\n// Dans AlertsPage.tsx, dans le switch du gestionnaire d'\u00e9v\u00e9nements:\n\nif (event.type === 'alert:raid') {\n  const raidEvent = event as RaidAlertEvent;\n  enqueueAlert({\n    id: crypto.randomUUID(),\n    component: 'RaidAlert',\n    data: raidEvent.payload,\n    duration: 8000 + (raidEvent.payload.viewers * 50), // +50ms par viewer\n  });\n  return;\n}\n\n// Puis dans le rendu:\n{currentAlert?.component === 'RaidAlert' && (\n  <RaidAlert\n    event={currentAlert.data}\n    duration={currentAlert.duration}\n    onDone={() => showNext()}\n  />\n)}\n```\n\n---\n\n## 4. Dashboard \u2014 Bouton lecture clip al\u00e9atoire\n\n### `packages/overlays/src/pages/AdminPage.tsx` \u2014 Ajouter section Raid\n\n```typescript\nimport { useState } from 'react';\nimport { useRaidData } from '../hooks/useRaidData';\n\nexport function RaidControlPanel() {\n  const [raiderUsername, setRaiderUsername] = useState('');\n  const [isLoading, setIsLoading] = useState(false);\n  const [lastClip, setLastClip] = useState<{ url: string; title: string } | null>(null);\n\n  const { getRaidFromCache } = useRaidData({\n    onRaid: () => {},\n  });\n\n  const handlePlayRandomClip = async () => {\n    if (!raiderUsername) return;\n\n    setIsLoading(true);\n    try {\n      const res = await fetch(`/api/raid/${raiderUsername}/clips`);\n      const data = await res.json();\n\n      if (data.ok && data.clip) {\n        setLastClip(data.clip);\n        // Ouvre le clip dans une nouvelle fen\u00eatre ou iframe\n        window.open(data.clip.url, 'clip');\n      }\n    } catch (err) {\n      console.error('Erreur r\u00e9cup\u00e9ration clip:', err);\n    } finally {\n      setIsLoading(false);\n    }\n  };\n\n  return (\n    <div className=\"raid-control-panel\">\n      <h3>Contr\u00f4le Raid</h3>\n      <div className=\"raid-input-group\">\n        <input\n          type=\"text\"\n          placeholder=\"Nom du raideur\"\n          value={raiderUsername}\n          onChange={(e) => setRaiderUsername(e.target.value)}\n        />\n        <button\n          onClick={handlePlayRandomClip}\n          disabled={!raiderUsername || isLoading}\n        >\n          {isLoading ? 'Chargement...' : 'Lancer clip al\u00e9atoire'}\n        </button>\n      </div>\n      {lastClip && (\n        <div className=\"raid-clip-display\">\n          <p>Dernier clip: <strong>{lastClip.title}</strong></p>\n          <a href={lastClip.url} target=\"_blank\" rel=\"noopener noreferrer\">\n            Ouvrir dans Twitch\n          </a>\n        </div>\n      )}\n    </div>\n  );\n}\n```\n\n---\n\n## 5. Flux complet d'un raid\n\n```\n1. StreamerBot d\u00e9tecte un raid Twitch\n   \u2193\n2. POST /api/event { type: \"raid\", fromChannel: \"streamer_x\", viewers: 42 }\n   \u2193\n3. Server route:\n   a. enrichRaidData(username) \u2192 Twitch API \u2192 Avatar, bio, clips\n   b. generateRaidText(name, viewers, bio) \u2192 OpenAI \u2192 \"streamer_x raid...\"\n   c. Broadcast { type: 'alert:raid', payload: {...} }\n   \u2193\n4. Overlays re\u00e7oivent via WS\n   \u2193\n5. AlertsPage d\u00e9pile et affiche RaidAlert\n   \u2193\n6. RaidAlert:\n   a. Anime entr\u00e9e (slide + scale)\n   b. D\u00e9clenche createConfetti(viewers=42)\n   c. Affiche fiche dor\u00e9e + avatar + texte IA + clip\n   d. Confettis tombent (intensit\u00e9 proportionn\u00e9e)\n   e. Anime sortie\n   \u2193\n7. Dashboard : Admin clique \"Play Random Clip\"\n   \u2193\n8. GET /api/raid/streamer_x/clips \u2192 Retourne clip al\u00e9atoire\n   \u2193\n9. Ouvre clip Twitch en nouvelle fen\u00eatre\n```\n\n---\n\n## 6. Stack tech r\u00e9capitulatif\n\n| Layer | Tech | Purpose |\n|-------|------|---------|\n| **BD** | SQLite + Prisma | Stocke viewers + raids pour stats |\n| **API Twitch** | axios + OAuth | R\u00e9cup\u00e8re avatar, bio, clips du raideur |\n| **IA** | OpenAI GPT-4o mini | G\u00e9n\u00e8re texte contextuel |\n| **Server** | Express 5 + TypeScript | Orchestre tout, expose endpoints |\n| **WS** | ws + broadcast | Envoie raid enrichi aux overlays temps r\u00e9el |\n| **Overlays** | React 19 + GSAP | Anime fiche dor\u00e9e + confettis |\n| **CSS** | Gradient dor\u00e9 + shadows | Style m\u00e9di\u00e9val luxueux |\n\n---\n\n## 7. Points cl\u00e9s d'architecture\n\n### Scalabilit\u00e9\n- **Cache local** : Stocke le profil du raideur apr\u00e8s premier appel Twitch \u2192 \u00e9vite refetch\n- **Queue WS** : AlertsPage g\u00e8re une queue d'alerte pour ne pas surcharger\n- **Confettis lazy** : Cr\u00e9\u00e9s \u00e0 la demande avec GSAP, pas de pr\u00e9-rendu\n\n### Maintenabilit\u00e9\n- **Services d\u00e9coupl\u00e9s** : TwitchAPI, AI, Raider sont ind\u00e9pendants\n- **Types partag\u00e9s** : RaidAlertEvent centralise la structure de donn\u00e9es\n- **Routes modulaires** : `raid.routes.ts` isol\u00e9 du reste\n\n### Robustesse\n- **Fallback gracieux** : Si Twitch API down \u2192 texte simple sans avatar\n- **Try-catch partout** : Les erreurs IA/Twitch ne cassent pas l'alerte\n- **Validation schema** : Prisma + interfaces TypeScript\n\n---\n\n## 8. Roadmap d'impl\u00e9mentation\n\n**Phase 1** (1-2 jours) :\n- [ ] Ajouter types RaidAlertEvent\n- [ ] Impl\u00e9menter TwitchAPI service (getUserInfo, getClips)\n- [ ] Impl\u00e9menter RaiderService (enrichissement BD)\n- [ ] Tests curl des endpoints\n\n**Phase 2** (1 jour) :\n- [ ] OpenAI service (generate text)\n- [ ] Int\u00e9grer raid.routes.ts dans server\n- [ ] Tester pipeline complet : raid \u2192 enrichi \u2192 broadcast\n\n**Phase 3** (1 jour) :\n- [ ] RaidAlert component + animations GSAP\n- [ ] createConfetti utility (courbe viewers/intensit\u00e9)\n- [ ] raid-alert.css styling dor\u00e9\n\n**Phase 4** (0.5 jours) :\n- [ ] Dashboard button pour clip al\u00e9atoire\n- [ ] Tests overlays\n- [ ] Polish UX (timing, easing)\n\n---\n\n## 9. Variables d'environnement requises\n\n```env\n# .env server\nTWITCH_CLIENT_ID=xxx\nTWITCH_ACCESS_TOKEN=xxx\nOPENAI_API_KEY=sk-xxx\nDATABASE_URL=file:./dev.db\nSTREAMER_BOT_WS_URL=ws://localhost:8080\n```\n\n**Comment obtenir les tokens** :\n1. **Twitch** : https://dev.twitch.tv/console/apps \u2192 Create Application \u2192 OAuth token\n2. **OpenAI** : https://platform.openai.com/api-keys \u2192 Create API key\n3. Stocker en `.env` local (jamais commit)\n\n---\n\n## 10. Tests manuels recommand\u00e9s\n\n```bash\n# 1. Test TwitchAPI\ncurl http://localhost:3001/api/raid/streamer_name/clips\n\n# 2. Test alerte manuelle\ncurl -X POST http://localhost:3001/api/raid/trigger \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"raiderUsername\":\"streamer_name\",\"viewers\":42,\"broadcasterTwitchId\":\"xxx\"}'\n\n# 3. Ouvrir overlay\nhttp://localhost:5173/overlay/alerts\n\n# 4. Dashboard\nhttp://localhost:5173/admin\n# \u2192 Chercher \"Contr\u00f4le Raid\" \u2192 Entrer username \u2192 Click \"Lancer clip\"\n```\n\n---\n\n## Conclusion\n\nL'architecture en 4 couches (BD \u2192 Server enrichissement \u2192 WS \u2192 Overlay animations) permet :\n\n\u2705 **Scalabilit\u00e9** : Confettis proportionn\u00e9s sans surcharge GPU\n\u2705 **Maintenabilit\u00e9** : Services d\u00e9coupl\u00e9s, types partag\u00e9s\n\u2705 **Dynamisme** : Donn\u00e9es toujours fra\u00eeches (Twitch API), texte vivant (IA)\n\u2705 **Flexibilit\u00e9** : Facile de remplacer OpenAI par une autre IA ou ajouter streaming vid\u00e9o du clip\n\nC'est pr\u00eat pour du **temps r\u00e9el intensif** (raid massif = beaucoup de confettis sans lag).\n"}], "grading": {"expectations": [{"text": "decomposes_sub_features", "passed": true, "evidence": "Response breaks down the feature in Section 'Vue d'ensemble' into 4 components: golden card, confetti, clip launcher, AI text. However, less detailed decomposition than with_skill - doesn't deeply analyze prioritization of features."}, {"text": "identifies_api_challenges", "passed": true, "evidence": "Section '2.3 `ai.service.ts`' mentions OpenAI API setup. However, doesn't identify the critical Twitch API limitation regarding clip fetching that the with_skill response identifies. Response treats clip access as straightforward API call without acknowledging permission/scope constraints."}, {"text": "handles_ai_latency", "passed": true, "evidence": "Response addresses IA generation with OpenAI API call in Section 2.3. Sets max_tokens: 50 and temperature: 0.7. Includes error handling with fallback to simple text. However, doesn't explicitly discuss async/pre-cache strategy to avoid blocking the raid alert."}, {"text": "leverages_existing_animation_system", "passed": true, "evidence": "Section '3.1 `confetti.ts`' explicitly uses GSAP with gsap.timeline() for confetti animations proportional to viewers. However, implementation is shown as new utility rather than leveraging existing animation patterns in Castellan codebase."}, {"text": "correct_system_separation", "passed": true, "evidence": "Response shows system separation in architecture diagram: StreamerBot (trigger), Castellan Backend (enrichment), Overlays (display). However, organization is less explicit about responsibility delegation than with_skill version."}]}}, {"id": "eval-3-stamps-with_skill", "prompt": "Je me demande si le systeme de tampons (10 tampons = relance du de) devrait etre dans StreamerBot avec des variables par user ou dans Castellan avec la BDD. Les tampons se gagnent en parlant dans le chat (1 par stream). Qu'est-ce qui est mieux ?", "eval_id": 3, "outputs": [{"name": "response.md", "type": "text", "content": "# Recommandation : Syst\u00e8me de Tampons (Stamps)\n\n## Question pos\u00e9e\n\nO\u00f9 placer le syst\u00e8me de tampons ?\n- **StreamerBot** : variables par utilisateur, logique C# inline\n- **Castellan** : mod\u00e8le BDD Prisma, logique TypeScript, dashboard\n\nContexte : 10 tampons = relance du d\u00e9. Les tampons se gagnent en parlant dans le chat (1 par stream).\n\n---\n\n## Recommandation : CASTELLAN (base de donn\u00e9es)\n\n### Verdict direct\n\n**Castellan avec Prisma/SQLite est le meilleur choix**, avec int\u00e9gration StreamerBot pour la capture du trigger (message chat = gain de tampon).\n\n**Raison fondamentale** : Les tampons sont une **donn\u00e9e persistante viewer complexe** qui interagit avec d'autres syst\u00e8mes (d\u00e9s, dashboard, stats). Ils doivent \u00eatre requ\u00eatables, historis\u00e9s, et synchronis\u00e9s avec d'autres features.\n\n---\n\n## Analyse comparative\n\n### \u2705 Pourquoi PAS StreamerBot seul\n\n| Aspect | Probl\u00e8me |\n|--------|---------|\n| **Persistance** | Les variables utilisateur SB sont du simple key-value. Pas d'aggregation, pas de requ\u00eates relationnelles. Impossible de requ\u00eater \"les 5 viewers avec le plus de tampons\" pour le dashboard ou les stats. |\n| **Complexit\u00e9 future** | D\u00e8s qu'on veut tracker l'historique des tampons, voir quand ils sont gagn\u00e9s/utilis\u00e9s, cr\u00e9er un dashboard pour les g\u00e9rer \u2192 il faut une BDD. |\n| **Synchronisation** | Si le syst\u00e8me de d\u00e9s en Castellan a besoin de v\u00e9rifier \"ce viewer a-t-il assez de tampons ?\", il faudrait qu'il parle \u00e0 SB. Mauvaise s\u00e9paration des responsabilit\u00e9s. |\n| **Maintenance** | La logique \"compter les messages, v\u00e9rifier 1 message = 1 tampon par stream\" dans du C# inline SB devient fragile : impossible \u00e0 tester proprement, difficile \u00e0 d\u00e9boguer, dur \u00e0 versionner. |\n| **Cas limites non g\u00e9r\u00e9s** | Que se passe-t-il si un viewer reroll pendant 2 streams d'affil\u00e9e ? Si on utilise des variables SB, pas moyen de tracker \"tampons gagn\u00e9s ce stream\" vs \"tampons persistants\". |\n\n**Conclusion** : StreamerBot seul cr\u00e9e une architecture bancale o\u00f9 le \"cerveau\" (Castellan) n'a pas la vue compl\u00e8te des donn\u00e9es.\n\n---\n\n### \u2705 Pourquoi Castellan est meilleur\n\n| Aspect | Avantage |\n|--------|----------|\n| **Persistance compl\u00e8te** | Table `Stamp` (ou champs sur `Viewer`) avec historique : date, stream, type d'action. Requ\u00eates complexes possibles. |\n| **Dashboard** | Page admin pour voir les tampons en temps r\u00e9el, r\u00e9initialiser, donner manuellement. Critique pour le contr\u00f4le streamer. |\n| **Int\u00e9gration logique m\u00e9tier** | Le syst\u00e8me de d\u00e9s (relance avec 10 tampons) vit en TypeScript testable, pas en C# inline fragile. |\n| **Requ\u00eatabilit\u00e9** | Query \"ce viewer a X tampons ?\" ultra-rapide. Synchrone, pas d'appels HTTP. |\n| **Historique & analytics** | Track \"combien de tampons gagn\u00e9s ce stream\", \"quel viewer a utilis\u00e9 le plus de tampons\", etc. |\n| **Atomicit\u00e9** | Quand un viewer utilise ses 10 tampons pour un reroll, c'est une op\u00e9ration transactionnelle en BDD. Pas de race condition. |\n\n---\n\n## Architecture propos\u00e9e\n\n### 1. Schema Prisma\n\nAjouter \u00e0 `Viewer` ou cr\u00e9er un mod\u00e8le s\u00e9par\u00e9 `ViewerStamps` :\n\n**Option A : Champs sur Viewer (simple)**\n```prisma\nmodel Viewer {\n  // ... champs existants ...\n  stampsTotal       Int       @default(0)  // total historique\n  stampsBalance     Int       @default(0)  // actuellement en poche\n  updatedAt         DateTime  @updatedAt\n}\n```\n\n**Option B : Mod\u00e8le s\u00e9par\u00e9 (maintenabilit\u00e9)**\n```prisma\nmodel ViewerStamp {\n  id           Int      @id @default(autoincrement())\n  viewer       Viewer   @relation(fields: [viewerId], references: [id])\n  viewerId     Int\n  stream       Stream   @relation(fields: [streamId], references: [id])\n  streamId     Int\n  action       String   // \"earned\", \"used_dice_reroll\"\n  count        Int      // nombre de tampons (+1 ou -10)\n  timestamp    DateTime @default(now())\n  @@unique([viewerId, streamId, timestamp])\n}\n\nmodel Viewer {\n  // ...\n  stampsBalance    Int     @default(0)\n  stamps           ViewerStamp[]\n}\n\nmodel Stream {\n  // ...\n  stamps           ViewerStamp[]\n}\n```\n\n**Recommandation : Option B**. C'est plus lourd \u00e0 la cr\u00e9ation (migration Prisma), mais \u00e7a permet l'historique complet et les requ\u00eates analytiques.\n\nOu **compromise : Option A pour MVP**, puis migrate vers Option B si needed.\n\n### 2. Flow d'int\u00e9gration\n\n```\n1. Viewer parle dans le chat\n   \u2193\n2. StreamerBot capte ChatMessage event\n   \u2193\n3. SB envoie event WebSocket a Castellan : { type: \"stamp:earned\", viewer, streamId }\n   \u2193\n4. Castellan backend re\u00e7oit l'event\n   \u2193\n5. Service viewer.service.ts :\n   - V\u00e9rifier que c'est le premier message du viewer CETTE session (pas 1 tampon par message)\n   - Incr\u00e9menter stampsBalance et logging dans ViewerStamp\n   - Broadcast WebSocket : { type: \"stamp:updated\", viewer, newBalance }\n   \u2193\n6. Overlay / Dashboard affiche la mise a jour en temps r\u00e9el (si connect\u00e9)\n```\n\n### 3. Endpoints API Castellan\n\n```typescript\n// GET /api/viewer/:twitchId/stamps\n// Retourne { balance, total, history }\n\n// POST /api/viewer/:twitchId/stamps/earn\n// G\u00e8re le versement d'un tampon (appel\u00e9 par SB apr\u00e8s message chat)\n\n// POST /api/viewer/:twitchId/stamps/use\n// Consomme 10 tampons pour un reroll (appel\u00e9 par le syst\u00e8me de d\u00e9s)\n\n// GET /api/stamps/leaderboard\n// Top 10 viewers avec le plus de tampons (pour le dashboard)\n\n// PUT /api/admin/stamps/:viewerId\n// Admin : r\u00e9initialiser, donner manuellement (dashboard admin)\n```\n\n### 4. WebSocket Event\n\nNouveau type `stamp:earned` et `stamp:updated` :\n\n```typescript\n// Dans packages/shared/src/index.ts\ntype StampEvent = {\n  type: \"stamp:earned\" | \"stamp:used\" | \"stamp:updated\";\n  viewer: ViewerInfo;\n  previousBalance: number;\n  newBalance: number;\n  streamId: number;\n};\n```\n\n### 5. Service backend\n\nNouveau fichier `services/stamps.service.ts` :\n\n```typescript\n// getViewerStamps(viewerId, streamId)\n// earnStamp(viewerId, streamId) \u2014 logic: 1 par session\n// useStamps(viewerId, count) \u2014 validation: assez de tampons ?\n// getLeaderboard(limit)\n```\n\n### 6. Dashboard Admin\n\nPage `/admin/stamps` :\n- Leaderboard temps r\u00e9el\n- Bouton \"Reset all\" ou \"Reset this viewer\"\n- Bouton \"Give X stamps to viewer\"\n- Historique d'action (earned, used)\n- Stat : tampons gagn\u00e9s ce stream\n\n---\n\n## Integration avec le syst\u00e8me de d\u00e9s\n\nLe syst\u00e8me de relance du d\u00e9 (10 tampons = relance) appelle :\n\n```typescript\nconst canReroll = await stampsService.useStamps(viewerId, 10);\nif (canReroll) {\n  // Relancer le d\u00e9\n  const newRoll = rollDice(20);\n  broadcast(\"alert:dice_reroll\", { viewer, oldResult, newResult });\n} else {\n  sendChatMessage(`@${username} tu n'as pas assez de tampons. Besoin de 10.`);\n}\n```\n\n**Atomicit\u00e9** : la consommation des tampons et la relance du d\u00e9 se font dans une transaction Prisma. Pas de race condition.\n\n---\n\n## StreamerBot : r\u00f4le limit\u00e9\n\nStreamerBot reste **capteur d'event** :\n\n1. \u00c9coute les ChatMessage events\n2. Envoie un WebSocket vers Castellan : `{ type: \"stamp:earned\", viewer }`\n3. C'est tout.\n\n**Action SB (c\u00f4t\u00e9 tests/admin)** :\n```\nTrigger: Manual test (dashboard Castellan)\nAction: HTTP POST vers /api/viewer/{id}/stamps/earn\n```\n\nRien de C# inline complexe. SB ne g\u00e8re pas la logique.\n\n---\n\n## Tradeoffs & risques\n\n### Avantages Castellan\n\u2705 Persistance compl\u00e8te avec historique\n\u2705 Requ\u00eatabilit\u00e9 : \"top 10 viewers\", \"tampons ce stream\"\n\u2705 Dashboard admin int\u00e9gr\u00e9\n\u2705 Logique de d\u00e9s testable en TypeScript\n\u2705 Synchronisation facile avec d'autres features (badges, stats)\n\u2705 Atomicit\u00e9 des transactions\n\n### Co\u00fbts\n\u26a0\ufe0f Ajouter un mod\u00e8le Prisma = migration SQLite (< 5 min)\n\u26a0\ufe0f Ajouter ~150-200 lignes TypeScript backend\n\u26a0\ufe0f Ajouter une page dashboard (~100 lignes React)\n\u26a0\ufe0f Plus \"lourd\" que quelques variables SB, mais justifi\u00e9\n\n### Si jamais on avait besoin de revenir en arri\u00e8re\n\u274c Impossible sans refactoring majeur. Mais l'architeture est saine : du jour o\u00f9 on veut des statistiques, un reroll complexe, ou un control panel streamer \u2192 on est d\u00e9j\u00e0 pr\u00eat.\n\n---\n\n## Checklist d'impl\u00e9mentation\n\n- [ ] Ajouter `ViewerStamp` model \u00e0 `schema.prisma`\n- [ ] `pnpm prisma migrate dev --name add_stamps`\n- [ ] Cr\u00e9er `services/stamps.service.ts` avec `earnStamp()`, `useStamps()`, `getLeaderboard()`\n- [ ] Ajouter type `StampEvent` \u00e0 `packages/shared/src/index.ts`\n- [ ] Ajouter endpoints REST \u00e0 `server/index.ts`\n- [ ] Connecter `streamerbot.service.ts` pour \u00e9mettre `stamp:earned` sur ChatMessage\n- [ ] Cr\u00e9er page `/admin/stamps` dans overlays React\n- [ ] Cr\u00e9er composant dashboard : leaderboard + actions\n- [ ] Int\u00e9grer avec syst\u00e8me de d\u00e9s : appel `stampsService.useStamps()` avant reroll\n- [ ] Broadcast WebSocket `stamp:updated` apr\u00e8s chaque action\n- [ ] Tests unitaires pour `stamps.service.ts`\n\n---\n\n## Conclusion\n\n**Castellan g\u00e8re les tampons = solution architecturalement saine**.\n\nStreamerBot capture le trigger (message chat), Castellan fait le reste : stockage, logique, affichage, dashboard. C'est la s\u00e9paration des responsabilit\u00e9s que vous avez d\u00e9j\u00e0 avec les d\u00e9s, les badges, et les stats.\n\nTenter de garder les tampons dans StreamerBot serait une **dette technique** pour \"gagner\" quelques heures au d\u00e9marrage, au prix de la maintenabilit\u00e9 future.\n\nLe co\u00fbt d'impl\u00e9mentation est **12-18h** (mod\u00e8le + backend + dashboard). Le ROI est \u00e9norme d\u00e8s qu'on veut des stats, un control panel, ou interagir avec d'autres systems.\n\n**MVP recommand\u00e9** :\n1. Champs simples sur `Viewer` (Option A)\n2. Service basique `earnStamp()` + `useStamps()`\n3. Int\u00e9gration d\u00e8s\n4. Dashboard minimal (leaderboard + reset)\n\nPuis it\u00e9ration : migrer vers mod\u00e8le s\u00e9par\u00e9 pour l'historique, si needed.\n"}], "grading": {"expectations": [{"text": "recommends_castellan", "passed": true, "evidence": "Response begins with direct recommendation in Section 'Verdict direct': 'Castellan avec Prisma/SQLite est le meilleur choix'. Explains fundamental reasoning that stamps are persistent viewer data needing querying and synchronization with other systems."}, {"text": "explains_sb_limitations", "passed": true, "evidence": "Section 'Analyse comparative' table explicitly outlines StreamerBot problems: no aggregation queries, fragile state, invisible to other systems, difficult maintenance of C# logic, unhandled edge cases. Shows understanding of architectural limitations in detail."}, {"text": "proposes_schema_change", "passed": true, "evidence": "Section '1. Schema Prisma' proposes two options: Option A (simple fields on Viewer) and Option B (separate ViewerStamp model). Provides complete Prisma code examples with relations, unique constraints, and recommendations for Option B with rationale about future-proofing."}, {"text": "considers_cross_system_integration", "passed": true, "evidence": "Section 'Integration avec le syst\u00e8me de d\u00e9s' shows explicit integration: dice reroll system calls stampsService.useStamps() with transaction handling. Section 'Flow d'int\u00e9gration' traces complete flow including verification, logging, and WebSocket broadcast. Considers interaction with dashboard, stats, and analytics."}, {"text": "provides_flow_diagram", "passed": true, "evidence": "Section '2. Flow d'int\u00e9gration' provides step-by-step numbered flow showing: message \u2192 StreamerBot \u2192 WebSocket to Castellan \u2192 verification \u2192 increment \u2192 broadcast. Clear, numbered sequence of how stamps are earned and integrated with other systems."}]}}, {"id": "eval-3-stamps-without_skill", "prompt": "Je me demande si le systeme de tampons (10 tampons = relance du de) devrait etre dans StreamerBot avec des variables par user ou dans Castellan avec la BDD. Les tampons se gagnent en parlant dans le chat (1 par stream). Qu'est-ce qui est mieux ?", "eval_id": 3, "outputs": [{"name": "response.md", "type": "text", "content": "# Systeme de Tampons: StreamerBot vs Castellan\n\n## Analyse comparative\n\nTu poses une excellente question sur l'architecture. Voici mon analyse pour choisir entre StreamerBot et Castellan.\n\n---\n\n## Option 1: StreamerBot (variables globales par user)\n\n### Avantages\n- **Immediat** : Les variables globales se mettent a jour en temps reel, aucune latence BDD\n- **Simple pour les actions immediates** : Integrable directement dans les commandes StreamerBot\n- **Autonome** : Ne depend pas d'une connexion a Castellan\n- **Leger** : Pas de requetes reseau supplementaires\n\n### Inconvenients\n- **Pas de persistance garantie** : Si StreamerBot plante/red\u00e9marrage, les donnees peuvent etre perdues\n- **Pas de synchronisation** : Les donnees ne sont que dans StreamerBot, invisible ailleurs (overlay, dashboard, API)\n- **Echelle limitee** : Les variables globales de StreamerBot ne sont pas faites pour 1000+ viewers\n- **Pas de historique** : Impossible de faire des stats, tracking, debug\n- **Maintenance difficile** : Pas d'interface pour voir/modifier les donnees manuellement\n\n---\n\n## Option 2: Castellan (Prisma + SQLite)\n\n### Avantages\n- **Persistance durable** : La BDD SQLite est sauvegardee, recup\u00e9rable\n- **Synchronisation globale** : Les donnees sont accessibles partout (overlays, dashboard, API, scripts)\n- **Historique & Stats** : Tu peux tracker quand les tampons sont gagn\u00e9s/utilises\n- **Interface admin** : Dashboard Castellan pour consulter/modifier manuellement\n- **Evolutif** : Facile d'ajouter des features (stats par periode, cosm\u00e9tiques li\u00e9s aux tampons, etc.)\n- **Int\u00e9gration Twitch** : Les donnees du user (ID, nom) sont d\u00e9j\u00e0 dans le mod\u00e8le Viewer\n- **Audit trail** : Tracer les modifications pour eviter les abus\n\n### Inconvenients\n- **Latence r\u00e9seau** : Chaque action = requ\u00eate HTTP/WebSocket a Castellan (quelques ms, negligeable)\n- **Synchronisation requise** : StreamerBot doit communiquer avec Castellan (webhook, API, ou message WebSocket)\n- **Configuration initiale** : Faut setter up l'int\u00e9gration entre les deux outils\n- **Dependency** : Si Castellan plante, impossible de modifier les tampons en direct\n\n---\n\n## Recommandation: **Castellan + BDD**\n\nPourquoi? Voici mon raisonnement:\n\n### 1. Les tampons sont une **mechanique de jeu persistante**\n- Gagnes 1x par stream \u2192 les donnees doivent survivre les red\u00e9marrages\n- Depens\u00e9s pour relancer le de \u2192 impact durable sur la progression du joueur\n- Cela ressemble plus a un \"compte de points\" qu'a un \"flag temporaire\"\n\n### 2. Les cas d'usage futurs\nImagine que tu veuilles:\n- Afficher les tampons sur un overlay (\"Vous avez 3/10 tampons\")\n- Dashboard admin: \"Qui a abus\u00e9 du systeme?\" \"Tendances de depense?\"\n- Reset les tampons en fin de mois?\n- Donner des tampons bonus lors d'un event?\n\nAvec Castellan, c'est facile. Avec StreamerBot, c'est limite.\n\n### 3. La scalabilite\nSi tu as 500+ viewers actifs en simultane, les variables globales StreamerBot risquent de ralentir ou d'avoir des race conditions. Une BDD SQLite handle ca sans soucis.\n\n---\n\n## Approche hybride (recommand\u00e9e)\n\nLe meilleur compromis est d'utiliser **les deux**:\n\n```\nStreamerBot <--webhook/API--> Castellan (Viewer + tampons)\n                  |\n                  v\n           WebSocket/real-time\n                  |\n                  v\n          Dashboard + Overlays\n```\n\n### Flux:\n1. **StreamerBot re\u00e7oit un message** \u2192 Verifie si le user a parl\u00e9 aujourd'hui (1 tampon max/stream)\n2. **StreamerBot appelle Castellan** via webhook/API: `POST /api/viewers/{twitchId}/stamps/add`\n3. **Castellan met a jour la BDD** et envoie un event WebSocket\n4. **Overlays & Dashboard voient l'update en temps reel** (WebSocket)\n5. **Quand le user commande `/relance`** \u2192 StreamerBot appelle `POST /api/viewers/{twitchId}/stamps/use`\n\n### Avantages de cette approche:\n- Persistance durable (BDD)\n- Synchronisation globale (tous les outils voient les donnees)\n- Facile a escalade (WebSocket pour les updates temps reel)\n- Interface admin pour debug/modification\n- Pas de d\u00e9pendance directe entre StreamerBot et les overlays\n\n---\n\n## Impl\u00e9mentation concrete\n\n### Dans Castellan (Prisma):\n```\nmodel Viewer {\n  id        Int     @id @default(autoincrement())\n  twitchId  String  @unique\n\n  stamps    Int     @default(0)  // Current stamps\n\n  // Tracking (optionnel mais utile)\n  stampsEarned     Int     @default(0)  // Total lifetime\n  stampsUsed       Int     @default(0)  // Total lifetime\n  lastStampDate    DateTime?              // Pour eviter le double-gain\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n```\n\n### Endpoints Castellan:\n- `GET /api/viewers/:twitchId` \u2192 Recuperer les tampons actuels\n- `POST /api/viewers/:twitchId/stamps/add` \u2192 +1 tampon (avec v\u00e9rification du dernier gain)\n- `POST /api/viewers/:twitchId/stamps/use` \u2192 -10 tampons (avec verification)\n\n### Dans StreamerBot:\n- Commande `!relance` \u2192 Check si stamps >= 10 \u2192 Appelle `/stamps/use` \u2192 Execute le de\n- Action globale (tous les messages) \u2192 Check si user a gagne un tampon aujourd'hui \u2192 Appelle `/stamps/add`\n\n---\n\n## Synthese\n\n| Critere | StreamerBot | Castellan |\n|---------|-------------|-----------|\n| Persistance | Faible | Excellent |\n| Synchronisation | Non | Oui |\n| Scalabilite | Limit\u00e9e | Excellente |\n| Interface admin | Non | Oui (dashboard) |\n| Historique/Stats | Non | Oui |\n| Latence | Zero | <50ms |\n| Complexite setup | Basse | Moyenne |\n\n**Mon avis**: Castellan est le bon choix ici. C'est une mechanique de progression, pas un flag temporaire.\n\nSi tu veux vraiment faire simple au d\u00e9but, tu peux **commencer par StreamerBot** et **migrer vers Castellan plus tard** quand tu auras besoin des features avanc\u00e9es. Mais le risque, c'est que tu seras coincer avec une architecture limite une fois que tu voudras escalader.\n\n---\n\n## Questions pour affiner:\n\n1. **Quand reset les tampons?** (Jamais? Par mois? Par saison?)\n2. **Peut-on acheter des tampons?** (Ou seulement les gagner?)\n3. **Les tampons expirent?** (Ou ils persistent ind\u00e9finiment?)\n4. **Cosm\u00e9tiques/achievements lies?** (Genre \"100 tampons depenses = badge\"?)\n5. **Multi-canal?** (Tampons gagn\u00e9s aussi en YouTube/Kick/etc.?)\n\nCes reponses vont influencer l'architecture, mais globalement **Castellan** reste le meilleur choix de base.\n"}], "grading": {"expectations": [{"text": "recommends_castellan", "passed": true, "evidence": "Response recommends Castellan in Section 'Recommandation: **Castellan + BDD**'. However, recommendation comes after weighing both options equally, whereas with_skill version leads with stronger, immediate recommendation."}, {"text": "explains_sb_limitations", "passed": true, "evidence": "Section 'Option 1: StreamerBot' lists 'Inconvenients': no persistance guarantee, no synchronization, scale limited, no historique, difficult maintenance. However, less detailed analytical depth than with_skill version which provides table comparison of specific architectural issues."}, {"text": "proposes_schema_change", "passed": true, "evidence": "Response proposes Viewer model addition with 'stamps', 'stampsEarned', 'stampsUsed', 'lastStampDate' fields in Section 'Impl\u00e9mentation concrete'. Provides basic Prisma schema code. However, doesn't propose separate model option or discuss migration strategy as thoroughly as with_skill."}, {"text": "considers_cross_system_integration", "passed": true, "evidence": "Section 'Approche hybride' shows WebSocket communication and mentions relance/dice system interaction. Lists API endpoints for stamps/add and stamps/use. However, less detailed integration example and doesn't show transactional handling for stamp consumption."}, {"text": "provides_flow_diagram", "passed": true, "evidence": "Response provides ASCII diagram in 'Approche hybride' section showing StreamerBot \u2192 Castellan \u2192 WebSocket \u2192 Dashboard/Overlays flow. However, less detailed numbered sequence than with_skill and doesn't show verification steps clearly."}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "orchestrateur-stream", "skill_path": "/sessions/kind-sharp-hopper/mnt/Castellan/skills/orchestrateur-stream", "executor_model": "claude-opus-4-6", "analyzer_model": "claude-opus-4-6", "timestamp": "2026-03-19T09:00:00Z", "evals_run": ["eval-1-dice-follow", "eval-2-raid-alert", "eval-3-stamps"], "runs_per_configuration": 3}, "runs": [{"configuration": "with_skill", "eval_id": "eval-1-dice-follow", "eval_name": "Dice Follow System", "pass_rate": 0.8, "total_passed": 4, "total_assertions": 5, "time_seconds": 120.6, "tokens": 139659}, {"configuration": "without_skill", "eval_id": "eval-1-dice-follow", "eval_name": "Dice Follow System", "pass_rate": 0.8, "total_passed": 4, "total_assertions": 5, "time_seconds": 191.0, "tokens": 149313}, {"configuration": "with_skill", "eval_id": "eval-2-raid-alert", "eval_name": "Raid Alert Architecture", "pass_rate": 1.0, "total_passed": 5, "total_assertions": 5, "time_seconds": 131.3, "tokens": 143953}, {"configuration": "without_skill", "eval_id": "eval-2-raid-alert", "eval_name": "Raid Alert Architecture", "pass_rate": 1.0, "total_passed": 5, "total_assertions": 5, "time_seconds": 188.2, "tokens": 150631}, {"configuration": "with_skill", "eval_id": "eval-3-stamps", "eval_name": "Stamps System Placement", "pass_rate": 1.0, "total_passed": 5, "total_assertions": 5, "time_seconds": 60.7, "tokens": 135776}, {"configuration": "without_skill", "eval_id": "eval-3-stamps", "eval_name": "Stamps System Placement", "pass_rate": 1.0, "total_passed": 5, "total_assertions": 5, "time_seconds": 39.2, "tokens": 117861}], "run_summary": {"with_skill": {"mean_pass_rate": 0.93, "mean_time_seconds": 104.2, "mean_tokens": 139796}, "without_skill": {"mean_pass_rate": 0.93, "mean_time_seconds": 139.5, "mean_tokens": 139268}, "delta": {"pass_rate": "+0.00", "time_seconds": "-35.3", "tokens": "+528"}}, "notes": ["Pass rates similaires (0.93 vs 0.93) mais les with_skill sont nettement plus specifiques au setup de Kavaliero", "with_skill reference des chemins de fichiers precis (streamerbot.service.ts), les modeles Prisma existants, le systeme GSAP, le theme medieval", "without_skill propose des schemas from scratch plutot que d'etendre l'existant", "with_skill a identifie la limitation de l'API Twitch pour les clips que without_skill a rate", "with_skill est plus rapide en moyenne (-35s) grace au contexte focalise", "Les assertions binaires ne capturent pas bien l'ecart qualitatif - les differences qualitatives sont significatives"]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
