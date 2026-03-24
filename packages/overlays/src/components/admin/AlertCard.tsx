@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { apiPut, apiPost } from "../../hooks/useAdminApi";
-import type { AlertTypeConfig } from "@castellan/shared";
+import type { AlertTypeConfig, TrumpetConfig, TrumpetRowsConfig } from "@castellan/shared";
 
 interface AlertCardProps {
   type: string;
@@ -48,6 +48,32 @@ export function AlertCard({ type, config, isExpanded, onToggle, onUpdate }: Aler
 
   function updateMedia(patch: Partial<AlertTypeConfig["media"]>) {
     setForm(prev => ({ ...prev, media: { ...prev.media, ...patch } }));
+  }
+
+  const defaultTrumpet: TrumpetConfig = {
+    rows: { bottom: true, middle: true, top: true },
+    size: 250, angle: 15,
+    pairStagger: 0.8, slideDuration: 0.7, bannerDelay: 0.3, bannerStayDuration: 6,
+  };
+
+  function updateTrumpet(patch: Partial<TrumpetConfig>) {
+    setForm(prev => ({
+      ...prev,
+      trumpet: { ...defaultTrumpet, ...prev.trumpet, ...patch },
+    }));
+  }
+
+  function updateTrumpetRow(row: keyof TrumpetRowsConfig, value: boolean) {
+    setForm(prev => {
+      const current = prev.trumpet ?? defaultTrumpet;
+      return {
+        ...prev,
+        trumpet: {
+          ...current,
+          rows: { ...current.rows, [row]: value },
+        },
+      };
+    });
   }
 
   async function handleSave() {
@@ -309,6 +335,125 @@ export function AlertCard({ type, config, isExpanded, onToggle, onUpdate }: Aler
                     placeholder="e.g. raid.webm"
                   />
                 </div>
+
+                {/* Trumpet Config — pour tous les types qui ont une config trumpet */}
+                {form.trumpet && (
+                  <>
+                    <div className="admin-field admin-field--full" style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 12 }}>
+                      <span className="admin-label" style={{ fontSize: 14 }}>🎺 Animation Trompettes</span>
+                    </div>
+
+                    {/* Row toggles */}
+                    <div className="admin-field">
+                      <span className="admin-label">Rangée Bas</span>
+                      <div className="admin-toggle" onClick={() => updateTrumpetRow("bottom", !(form.trumpet?.rows.bottom ?? true))}>
+                        <div className={`admin-toggle-track${(form.trumpet?.rows.bottom ?? true) ? " admin-toggle-track--on" : ""}`}>
+                          <div className="admin-toggle-thumb" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="admin-field">
+                      <span className="admin-label">Rangée Milieu</span>
+                      <div className="admin-toggle" onClick={() => updateTrumpetRow("middle", !(form.trumpet?.rows.middle ?? true))}>
+                        <div className={`admin-toggle-track${(form.trumpet?.rows.middle ?? true) ? " admin-toggle-track--on" : ""}`}>
+                          <div className="admin-toggle-thumb" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="admin-field">
+                      <span className="admin-label">Rangée Haut</span>
+                      <div className="admin-toggle" onClick={() => updateTrumpetRow("top", !(form.trumpet?.rows.top ?? true))}>
+                        <div className={`admin-toggle-track${(form.trumpet?.rows.top ?? true) ? " admin-toggle-track--on" : ""}`}>
+                          <div className="admin-toggle-thumb" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Size */}
+                    <div className="admin-field admin-field--full">
+                      <label className="admin-label">Taille trompettes (px)</label>
+                      <div className="admin-slider-field">
+                        <input
+                          type="range" className="admin-slider"
+                          min={100} max={400} step={10}
+                          value={form.trumpet?.size ?? 250}
+                          onChange={e => updateTrumpet({ size: Number(e.target.value) })}
+                        />
+                        <span className="admin-slider-value">{form.trumpet?.size ?? 250}px</span>
+                      </div>
+                    </div>
+
+                    {/* Angle */}
+                    <div className="admin-field admin-field--full">
+                      <label className="admin-label">Angle inclinaison (°)</label>
+                      <div className="admin-slider-field">
+                        <input
+                          type="range" className="admin-slider"
+                          min={0} max={45} step={1}
+                          value={form.trumpet?.angle ?? 15}
+                          onChange={e => updateTrumpet({ angle: Number(e.target.value) })}
+                        />
+                        <span className="admin-slider-value">{form.trumpet?.angle ?? 15}°</span>
+                      </div>
+                    </div>
+
+                    {/* Pair Stagger */}
+                    <div className="admin-field admin-field--full">
+                      <label className="admin-label">Délai entre rangées (s)</label>
+                      <div className="admin-slider-field">
+                        <input
+                          type="range" className="admin-slider"
+                          min={0.2} max={2.0} step={0.1}
+                          value={form.trumpet?.pairStagger ?? 0.8}
+                          onChange={e => updateTrumpet({ pairStagger: Number(e.target.value) })}
+                        />
+                        <span className="admin-slider-value">{(form.trumpet?.pairStagger ?? 0.8).toFixed(1)}s</span>
+                      </div>
+                    </div>
+
+                    {/* Slide Duration */}
+                    <div className="admin-field admin-field--full">
+                      <label className="admin-label">Durée slide trompettes (s)</label>
+                      <div className="admin-slider-field">
+                        <input
+                          type="range" className="admin-slider"
+                          min={0.2} max={2.0} step={0.1}
+                          value={form.trumpet?.slideDuration ?? 0.7}
+                          onChange={e => updateTrumpet({ slideDuration: Number(e.target.value) })}
+                        />
+                        <span className="admin-slider-value">{(form.trumpet?.slideDuration ?? 0.7).toFixed(1)}s</span>
+                      </div>
+                    </div>
+
+                    {/* Banner Delay */}
+                    <div className="admin-field admin-field--full">
+                      <label className="admin-label">Délai avant banderole (s)</label>
+                      <div className="admin-slider-field">
+                        <input
+                          type="range" className="admin-slider"
+                          min={0.0} max={2.0} step={0.1}
+                          value={form.trumpet?.bannerDelay ?? 0.3}
+                          onChange={e => updateTrumpet({ bannerDelay: Number(e.target.value) })}
+                        />
+                        <span className="admin-slider-value">{(form.trumpet?.bannerDelay ?? 0.3).toFixed(1)}s</span>
+                      </div>
+                    </div>
+
+                    {/* Banner Stay Duration */}
+                    <div className="admin-field admin-field--full">
+                      <label className="admin-label">Durée affichage banderole (s)</label>
+                      <div className="admin-slider-field">
+                        <input
+                          type="range" className="admin-slider"
+                          min={2} max={15} step={0.5}
+                          value={form.trumpet?.bannerStayDuration ?? 6}
+                          onChange={e => updateTrumpet({ bannerStayDuration: Number(e.target.value) })}
+                        />
+                        <span className="admin-slider-value">{(form.trumpet?.bannerStayDuration ?? 6).toFixed(1)}s</span>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Action buttons */}
                 <div className="admin-btn-row">

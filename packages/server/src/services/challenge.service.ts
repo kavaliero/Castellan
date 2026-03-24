@@ -16,7 +16,7 @@
 
 import { prisma } from "../db/client";
 import { broadcast } from "../ws/broadcaster";
-import { getCurrentStreamId } from "./streamerbot.service";
+import { getCurrentStreamId, sendChatMessage } from "./streamerbot.service";
 import type { ChallengePayload, ChallengeType, ChallengeCreditsEntry } from "@castellan/shared";
 
 // ═══════════════════════════════════════════════════════════════
@@ -185,6 +185,8 @@ export async function incrementChallenge(
         finalValue: updated.target,
       },
     });
+    // L'Intendant félicite dans le chat
+    sendChatMessage(`✅ Défi ${challenge.label} complété ! ${challenge.target} ${challenge.label.toLowerCase()} réalisés ! GG Kavaliero 🎉`).catch(() => {});
   } else {
     console.log(`[Challenge] ${challenge.label} : ${newCurrent}/${challenge.target}`);
   }
@@ -292,6 +294,10 @@ export async function completeTimer(challengeId: string): Promise<void> {
       finalValue: challenge.target,
     },
   });
+
+  // L'Intendant annonce la fin du timer
+  const totalMin = Math.ceil(challenge.target / 60);
+  sendChatMessage(`⏰ Temps écoulé ! ${challenge.label} terminé après ${totalMin} min. Kavaliero est libéré ! 🏰`).catch(() => {});
 
   broadcast({
     type: "challenge:update",

@@ -1,19 +1,15 @@
 import type { AnimationModule } from "./types";
-import { defaultModule } from "./default";
-import { followModule } from "./medieval/follow";
-import { subModule } from "./medieval/sub";
-import { bitsModule } from "./medieval/bits";
-import { raidModule } from "./medieval/raid";
+import { trumpetFollowModule } from "./medieval/trumpet-follow";
 
-const registry: Record<string, AnimationModule> = {
-  follow: followModule,
-  sub: subModule,
-  bits: bitsModule,
-  raid: raidModule,
-};
+// Le module trompettes est utilise pour TOUTES les alertes.
+// Les anciens modules (follow wax seal, sub, bits, raid) restent dans medieval/
+// mais ne sont plus enregistres par defaut.
 
-export function getAnimationModule(type: string): AnimationModule {
-  return registry[type] ?? defaultModule;
+const registry: Record<string, AnimationModule> = {};
+
+export function getAnimationModule(_type: string): AnimationModule {
+  // Tous les types utilisent le module trompettes
+  return registry[_type] ?? trumpetFollowModule;
 }
 
 export function registerAnimation(type: string, module: AnimationModule): void {

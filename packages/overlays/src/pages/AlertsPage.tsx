@@ -2,19 +2,31 @@ import { useState, useRef, useCallback } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useSound } from "../hooks/useSound";
 import { ScrollAlert } from "../components/alerts/ScrollAlert";
+import { ChallengeRollOverlay, type ChallengeRollData } from "../components/challenges/ChallengeRollOverlay";
 import { resolveTemplate } from "../utils/resolveTemplate";
 import type { ScrollAlertData } from "../components/alerts/ScrollAlert";
-import type { WSEvent, AlertsConfig } from "@castellan/shared";
+import type { WSEvent, AlertsConfig, AlertChallengeRollPayload } from "@castellan/shared";
 
 const MEDIA_BASE_URL = "http://localhost:3001/media/alerts/videos";
 
-interface QueuedAlert {
+// ── Queue unifiée : alertes standard OU challenge rolls ──
+
+interface QueuedStandardAlert {
+  kind: "standard";
   id: string;
   data: ScrollAlertData;
   soundFile: string | null;
   soundVolume: number;
   duration: number;
 }
+
+interface QueuedChallengeRoll {
+  kind: "challenge_roll";
+  id: string;
+  data: ChallengeRollData;
+}
+
+type QueuedItem = QueuedStandardAlert | QueuedChallengeRoll;
 
 /**
  * Extract template variables from a WS alert event payload.
@@ -79,8 +91,8 @@ function getConfigKey(event: WSEvent): string | null {
 }
 
 export function AlertsPage() {
-  const [currentAlert, setCurrentAlert] = useState<QueuedAlert | null>(null);
-  const queueRef = useRef<QueuedAlert[]>([]);
+  const [currentItem, setCurrentItem] = useState<QueuedItem | null>(null);
+  const queueRef = useRef<QueuedItem[]>([]);
   const isShowingRef = useRef(false);
   const configRef = useRef<AlertsConfig | null>(null);
   const mediaDurationsRef = useRef<Map<string, number>>(new Map());
@@ -90,19 +102,22 @@ export function AlertsPage() {
   const showNext = useCallback(() => {
     const next = queueRef.current.shift();
     if (!next) {
-      setCurrentAlert(null);
+      setCurrentItem(null);
       isShowingRef.current = false;
       return;
     }
 
     isShowingRef.current = true;
-    setCurrentAlert(next);
-    playSound(next.soundFile, next.soundVolume);
-    // No more setTimeout — ScrollAlert calls onDone when animation completes
+    setCurrentItem(next);
+
+    // Son uniquement pour les alertes standard
+    if (next.kind === "standard") {
+      playSound(next.soundFile, next.soundVolume);
+    }
   }, [playSound]);
 
-  const enqueueAlert = useCallback((alert: QueuedAlert) => {
-    queueRef.current.push(alert);
+  const enqueueItem = useCallback((item: QueuedItem) => {
+    queueRef.current.push(item);
     if (!isShowingRef.current) {
       showNext();
     }
@@ -128,7 +143,31 @@ export function AlertsPage() {
       return;
     }
 
-    // Process alert events
+    // ── Challenge roll : animation dédiée (pas de config alerts-config.json) ──
+    if (event.type === "alert:challenge_roll") {
+      const p = event.payload as AlertChallengeRollPayload;
+      const challengeItem: QueuedChallengeRoll = {
+        kind: "challenge_roll",
+        id: crypto.randomUUID(),
+        data: {
+          viewerName: p.viewer.displayName,
+          challengeName: p.challengeName,
+          challengeLabel: p.challengeLabel,
+          challengeType: p.challengeType,
+          challengeIcon: p.challengeIcon,
+          challengeTitle: p.challengeTitle,
+          faces: p.faces,
+          result: p.result,
+          amount: p.amount,
+          profileImageUrl: p.profileImageUrl,
+          timings: p.timings,
+        },
+      };
+      enqueueItem(challengeItem);
+      return;
+    }
+
+    // ── Standard alerts : config-driven ──
     const config = configRef.current;
     if (!config) return;
 
@@ -152,11 +191,15 @@ export function AlertsPage() {
       mediaUrl = `${MEDIA_BASE_URL}/${alertCfg.media.file}`;
     }
 
-    // Duration: max of parchment and media
+    // Duration: trumpet bannerStayDuration overrides parchmentDuration if present
+    const baseDuration = alertCfg.trumpet?.bannerStayDuration
+      ? alertCfg.trumpet.bannerStayDuration * 1000
+      : alertCfg.parchmentDuration;
     const mediaDuration = mediaDurationsRef.current.get(configKey) ?? 0;
-    const duration = Math.max(alertCfg.parchmentDuration, mediaDuration);
+    const duration = Math.max(baseDuration, mediaDuration);
 
-    const queued: QueuedAlert = {
+    const queued: QueuedStandardAlert = {
+      kind: "standard",
       id: crypto.randomUUID(),
       data: {
         type: configKey,
@@ -169,24 +212,32 @@ export function AlertsPage() {
         ribbon,
         mediaUrl,
         mediaType: alertCfg.media.type,
+        trumpet: alertCfg.trumpet,
       },
       soundFile: alertCfg.sound.enabled ? alertCfg.sound.file : null,
       soundVolume: alertCfg.sound.volume,
       duration,
     };
 
-    enqueueAlert(queued);
-  }, [enqueueAlert, preloadFromConfig]);
+    enqueueItem(queued);
+  }, [enqueueItem, preloadFromConfig]);
 
   useWebSocket(handleEvent);
 
   return (
     <div className="alerts-page">
-      {currentAlert && (
+      {currentItem?.kind === "standard" && (
         <ScrollAlert
-          key={currentAlert.id}
-          alert={currentAlert.data}
-          duration={currentAlert.duration}
+          key={currentItem.id}
+          alert={currentItem.data}
+          duration={currentItem.duration}
+          onDone={showNext}
+        />
+      )}
+      {currentItem?.kind === "challenge_roll" && (
+        <ChallengeRollOverlay
+          key={currentItem.id}
+          data={currentItem.data}
           onDone={showNext}
         />
       )}

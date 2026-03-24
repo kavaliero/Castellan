@@ -17,6 +17,8 @@ export interface ScrollAlertData {
   ribbon: string | null;
   mediaUrl: string | null;
   mediaType: "video" | "gif" | null;
+  /** Config complete des trompettes (follow animation) */
+  trumpet?: import("@castellan/shared").TrumpetConfig;
 }
 
 interface ScrollAlertProps {
@@ -48,6 +50,7 @@ export function ScrollAlert({ alert, duration, onDone }: ScrollAlertProps) {
       viewerName: alert.viewerName,
       subtitle: alert.subtitle,
       ribbon: alert.ribbon,
+      trumpet: alert.trumpet,
     });
 
     const enterDuration = enterTl.duration();
@@ -82,6 +85,11 @@ export function ScrollAlert({ alert, duration, onDone }: ScrollAlertProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount, component is keyed by alert ID
   }, []);
+
+  // Si trumpet config, le module gere tout via portal — on rend juste un conteneur vide
+  if (alert.trumpet) {
+    return <div ref={containerRef} className={wrapperClass} />;
+  }
 
   return (
     <div ref={containerRef} className={wrapperClass}>

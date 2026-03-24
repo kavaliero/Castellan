@@ -1,0 +1,10 @@
+{
+  "bannerDelay": 100,
+  "bannerDuration": 600,
+  "viewerAppearDelay": 3000,
+  "viewerAppearDuration": 400,
+  "diceAppearDelay": 4000,
+  "diceRollDelay": 5000,
+  "displayDuration": 10000,
+  "exitDuration": 500
+}

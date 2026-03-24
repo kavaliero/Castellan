@@ -8,7 +8,8 @@ import { findOrCreateViewer, findOrCreateSession } from "./viewer.service";
 import { incrementFollowerCount, incrementSubscriberCount, setLastFollow, setLastSub, getFollowersTarget, getSubscribersTarget, updateGoalsConfig } from "./goals.service";
 import { setStreamInfo, setViewerCount, clearStreamState } from "./stream.service";
 import { incrementStamp, triggerBadgeCheck } from "./badge.service";
-import { grantDiceCapacity, rollDice } from "./dice.service";
+import { grantDiceCapacity, rollD6, rollD12, rollD20, getAvailableDice } from "./dice.service";
+import { findChallengeByReward, rollChallengePointDice, loadChallengePointsConfig } from "./challenge-points.service";
 
 /**
  * Service StreamerBot — se connecte au WebSocket Server de StreamerBot
@@ -32,6 +33,31 @@ let viewerCountPollTimer: ReturnType<typeof setInterval> | null = null;
 // Utilisé pour détecter le "first word" (première prise de parole).
 // Reset au début et à la fin de chaque stream.
 const spokenViewers = new Set<string>();
+
+// ─── Comptes ignorés (pas de rewards, badges, dés, stamps, crédits) ────
+// On garde leurs stats en BDD (messages, watch time) mais ils ne reçoivent
+// aucune récompense et n'apparaissent pas dans les crédits de fin.
+const IGNORED_USERNAMES = new Set([
+    "intendantbot",     // Bot Castellan
+    "kavalierogamedev", // Compte broadcaster
+    "nightbot",         // Bots classiques
+    "streamelements",
+    "streamlabs",
+    "moobot",
+    "fossabot",
+]);
+
+/**
+ * Vérifie si un viewer est un compte ignoré (bot ou broadcaster).
+ * Utilise le username (login) en lowercase pour la comparaison.
+ */
+export function isIgnoredAccount(viewer: { username?: string; twitchId?: string }): boolean {
+    if (!viewer.username) return false;
+    if (IGNORED_USERNAMES.has(viewer.username.toLowerCase())) return true;
+    // Le broadcaster est aussi ignoré via son twitchId (capturé au stream start)
+    if (currentBroadcasterId && viewer.twitchId === currentBroadcasterId) return true;
+    return false;
+}
 
 // ─── Public accessors ──────────────────────────────────────
 
@@ -64,6 +90,68 @@ export function setBroadcasterId(id: string | null): void {
     if (_onBroadcasterIdChange) _onBroadcasterIdChange(id);
     if (id) {
         console.log(`[StreamerBot] 🎙️ Broadcaster ID configuré: ${id}`);
+    }
+}
+
+// ─── Chat : envoyer un message via le Bot Account ───────────
+//
+// Castellan → SB doAction("Castellan - Chat Send") → CPH.SendMessage()
+// Un seul event, une seule action SB à configurer.
+//
+
+/** ID de l'action SB "Castellan - Chat Send" — résolu au premier appel */
+let chatSendActionId: string | null = null;
+const SB_CHAT_ACTION_NAME = "Castellan - Chat Send";
+
+/**
+ * Envoie un message dans le chat Twitch via le Bot Account StreamerBot.
+ * Utilise doAction pour exécuter l'action SB dédiée.
+ *
+ * @param message Le texte à envoyer dans le chat
+ * @returns true si l'envoi a réussi, false sinon
+ */
+export async function sendChatMessage(message: string): Promise<boolean> {
+    if (!client) {
+        console.warn("[Chat] ❌ StreamerBot non connecté — message ignoré:", message);
+        return false;
+    }
+
+    try {
+        // Résoudre l'ID de l'action au premier appel
+        if (!chatSendActionId) {
+            chatSendActionId = await resolveActionId(SB_CHAT_ACTION_NAME);
+            if (!chatSendActionId) {
+                console.error(`[Chat] ❌ Action "${SB_CHAT_ACTION_NAME}" introuvable dans StreamerBot`);
+                console.error(`[Chat] → Créer une action nommée exactement "${SB_CHAT_ACTION_NAME}" dans SB`);
+                return false;
+            }
+            console.log(`[Chat] ✅ Action "${SB_CHAT_ACTION_NAME}" résolue → ${chatSendActionId}`);
+        }
+
+        await client.doAction(chatSendActionId, { message });
+        console.log(`[Chat] 📤 L'Intendant: ${message}`);
+        return true;
+    } catch (err) {
+        console.error("[Chat] ❌ Erreur envoi message:", err);
+        // Reset l'ID au cas où l'action a été recréée dans SB
+        chatSendActionId = null;
+        return false;
+    }
+}
+
+/**
+ * Résout le GUID d'une action SB par son nom.
+ * Utilise getActions() puis cherche par name.
+ */
+async function resolveActionId(actionName: string): Promise<string | null> {
+    try {
+        const response = await client.getActions();
+        const actions = response?.actions ?? [];
+        const action = actions.find((a: any) => a.name === actionName);
+        return action?.id ?? null;
+    } catch (err) {
+        console.error(`[Chat] Erreur résolution action "${actionName}":`, err);
+        return null;
     }
 }
 
@@ -148,8 +236,10 @@ async function handleFollow(viewer: ViewerInfo) {
             payload: { type: "followers", current: newCount, target: getFollowersTarget() },
         });
 
-        // Badge check (fire-and-forget)
-        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        // Badge check (fire-and-forget) — skip pour bots/broadcaster
+        if (!isIgnoredAccount(viewer)) {
+            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        }
     } catch (err) {
         console.error("[StreamerBot] Erreur Follow:", err);
     }
@@ -190,9 +280,12 @@ async function handleSub(viewer: ViewerInfo, tier: number, months: number) {
             payload: { type: "subscribers", current: newCount, target: getSubscribersTarget() },
         });
 
-        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
-        // Chaque sub/resub donne une capacite de de
-        grantDiceCapacity(dbViewer.id, "sub", "subscription", viewer.displayName).catch(() => {});
+        // Récompenses : skip pour bots/broadcaster
+        if (!isIgnoredAccount(viewer)) {
+            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+            // Chaque sub/resub donne une capacite de de
+            grantDiceCapacity(dbViewer.id, "sub", "subscription", viewer.displayName).catch(() => {});
+        }
     } catch (err) {
         console.error("[StreamerBot] Erreur Sub:", err);
     }
@@ -226,7 +319,9 @@ async function handleGiftSub(
             payload: { viewer: gifter, recipientName, tier, totalGifted, anonymous },
         });
 
-        triggerBadgeCheck(dbViewer.id, gifter.displayName).catch(() => {});
+        if (!isIgnoredAccount(gifter)) {
+            triggerBadgeCheck(dbViewer.id, gifter.displayName).catch(() => {});
+        }
     } catch (err) {
         console.error("[StreamerBot] Erreur GiftSub:", err);
     }
@@ -254,9 +349,12 @@ async function handleRaid(viewer: ViewerInfo, viewers: number) {
             payload: { viewer, viewers, fromChannel: viewer.displayName },
         });
 
-        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
-        // Chaque raid donne une capacite de de
-        grantDiceCapacity(dbViewer.id, "raid", "raid", viewer.displayName).catch(() => {});
+        // Récompenses : skip pour bots/broadcaster
+        if (!isIgnoredAccount(viewer)) {
+            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+            // Chaque raid donne une capacite de de
+            grantDiceCapacity(dbViewer.id, "raid", "raid", viewer.displayName).catch(() => {});
+        }
     } catch (err) {
         console.error("[StreamerBot] Erreur Raid:", err);
     }
@@ -289,7 +387,9 @@ async function handleCheer(viewer: ViewerInfo, amount: number) {
             payload: { viewer, amount },
         });
 
-        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        if (!isIgnoredAccount(viewer)) {
+            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        }
     } catch (err) {
         console.error("[StreamerBot] Erreur Cheer:", err);
     }
@@ -321,12 +421,30 @@ async function handleRewardRedemption(
             },
         });
 
-        broadcast({
-            type: "alert:channel_point_redemption",
-            payload: { viewer, rewardName, rewardCost },
-        });
+        // Verifier si c'est un defi de channel points
+        const challengeConfig = findChallengeByReward(rewardName);
 
-        triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        if (challengeConfig) {
+            // Defi detecte → lancer de de automatique + animation dediee
+            console.log(`[StreamerBot] 🎲 Défi détecté: ${challengeConfig.label} (d${challengeConfig.faces})`);
+            await rollChallengePointDice(
+                challengeConfig,
+                { displayName: viewer.displayName, twitchId: viewer.twitchId },
+                dbViewer.id,
+            );
+            // Pas de broadcast alert:channel_point_redemption classique
+            // L'animation de defi (alert:challenge_roll) remplace l'alerte standard
+        } else {
+            // Reward classique (pas un defi) → alerte standard avec trompettes
+            broadcast({
+                type: "alert:channel_point_redemption",
+                payload: { viewer, rewardName, rewardCost },
+            });
+        }
+
+        if (!isIgnoredAccount(viewer)) {
+            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+        }
     } catch (err) {
         console.error("[StreamerBot] Erreur RewardRedemption:", err);
     }
@@ -485,7 +603,8 @@ export async function connectToStreamerBot(options?: {
             const session = await findOrCreateSession(dbViewer.id, currentStreamId);
 
             // First word : si ce viewer n'a pas encore parlé dans ce stream
-            if (!spokenViewers.has(viewer.twitchId)) {
+            // Skip pour les bots et le broadcaster
+            if (!isIgnoredAccount(viewer) && !spokenViewers.has(viewer.twitchId)) {
                 spokenViewers.add(viewer.twitchId);
                 if (session.messageCount === 0) {
                     await handleFirstWord(viewer);
@@ -510,19 +629,50 @@ export async function connectToStreamerBot(options?: {
                 data: { totalMessages: { increment: 1 } },
             });
 
-            // Tampon : +1 si premiere fois que le viewer parle dans ce stream
-            incrementStamp(dbViewer.id, currentStreamId).catch(() => {});
+            // Récompenses : skip pour les bots et le broadcaster
+            if (!isIgnoredAccount(viewer)) {
+                // Tampon : +1 si premiere fois que le viewer parle dans ce stream
+                incrementStamp(dbViewer.id, currentStreamId).catch(() => {});
+                // Badge check fire-and-forget
+                triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
+            }
 
-            // Badge check fire-and-forget
-            triggerBadgeCheck(dbViewer.id, viewer.displayName).catch(() => {});
-
-            // Commande !de : lancer un de (squatt ou roue)
-            const diceMatch = content.trim().toLowerCase().match(/^!de?\s+(squatt?|roue)$/);
-            if (diceMatch) {
-                const dieType = diceMatch[1].startsWith("squatt") ? "squatt" : "wheel";
-                rollDice(dbViewer.id, dieType as "squatt" | "wheel").catch((err) => {
-                    console.error("[Dice] Erreur commande !de:", err);
-                });
+            // Commandes de des : !d6 (squatt follow), !d12 (squatt sub/raid), !d20 (roue)
+            const diceCmd = content.trim().toLowerCase();
+            if (/^!d6\b/.test(diceCmd)) {
+                rollD6(dbViewer.id).then(async (r) => {
+                    if (!r.success && r.chatError) await sendChatMessage(r.chatError);
+                }).catch((err) => console.error("[Dice] Erreur !d6:", err));
+            } else if (/^!d12\b/.test(diceCmd)) {
+                rollD12(dbViewer.id).then(async (r) => {
+                    if (!r.success && r.chatError) await sendChatMessage(r.chatError);
+                }).catch((err) => console.error("[Dice] Erreur !d12:", err));
+            } else if (/^!d20\b/.test(diceCmd)) {
+                rollD20(dbViewer.id).then(async (r) => {
+                    if (!r.success && r.chatError) await sendChatMessage(r.chatError);
+                }).catch((err) => console.error("[Dice] Erreur !d20:", err));
+            } else if (/^!info\b/.test(diceCmd)) {
+                getAvailableDice(dbViewer.id).then(async (diceByTier) => {
+                    let d6 = 0;
+                    let d12 = 0;
+                    for (const { tier, count } of diceByTier) {
+                        if (tier === "follow") d6 += count;
+                        else d12 += count; // sub ou raid
+                    }
+                    const total = d6 + d12;
+                    if (total === 0) {
+                        await sendChatMessage(`🎲 @${viewer.displayName}, tu n'as aucun dé en stock !`);
+                    } else {
+                        const parts: string[] = [];
+                        if (d6 > 0) parts.push(`${d6} d6`);
+                        if (d12 > 0) parts.push(`${d12} d12`);
+                        parts.push(`${total} d20`);
+                        await sendChatMessage(
+                            `🎲 @${viewer.displayName}, ton stock de dés : ${parts.join(", ")} `
+                            + `| !d6 ou !d12 = squatts, !d20 = récompense/malus`
+                        );
+                    }
+                }).catch((err) => console.error("[Dice] Erreur !info:", err));
             }
 
             broadcast({
@@ -609,11 +759,18 @@ export async function connectToStreamerBot(options?: {
     });
 
     // ── Reward Redemption (live) ──
+    // StreamerBot envoie user_id/user_login/user_name a plat (pas de data.user)
     client.on("Twitch.RewardRedemption", async ({ data }: { data: any }) => {
-        const viewer = extractViewer(data.user);
+        const viewer = extractViewer(data.user) ?? extractViewer({
+            id: data.user_id,
+            login: data.user_login,
+            display: data.user_name,
+            name: data.user_name,
+        });
         if (!viewer) return;
-        const rewardName = data.reward?.title ?? data.rewardName ?? "Inconnu";
-        const rewardCost = data.reward?.cost ?? data.rewardCost ?? 0;
+
+        const rewardName = data.reward?.title ?? data.rewardTitle ?? data.title ?? data.rewardName ?? "Inconnu";
+        const rewardCost = data.reward?.cost ?? data.rewardCost ?? data.cost ?? 0;
         await handleRewardRedemption(viewer, rewardName, rewardCost);
     });
 

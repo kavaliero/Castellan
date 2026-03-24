@@ -7,15 +7,20 @@
     "follow": {
       "enabled": true,
       "variant": "minor",
-      "icon": "⚔️",
-      "sealColor": "#4a90d9",
-      "title": "Nouveau Chevalier !",
+      "icon": "🎺",
+      "sealColor": "#D4A843",
+      "title": "Nouveau Follower !",
       "subtitle": null,
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "follow.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "sub": {
       "enabled": true,
@@ -27,8 +32,13 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "sub.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "resub": {
       "enabled": true,
@@ -36,12 +46,17 @@
       "icon": "🛡️",
       "sealColor": "#9b59b6",
       "title": "Renouvellement de Serment !",
-      "subtitle": "Tier {tier}",
+      "subtitle": "{months} mois - Tier {tier}",
       "viewerName": "{viewer}",
-      "ribbon": "{months} mois",
+      "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "sub.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "gift_sub": {
       "enabled": true,
@@ -53,8 +68,13 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "sub.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "raid": {
       "enabled": true,
@@ -66,8 +86,13 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "raid.mp3", "volume": 0.8 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "bits": {
       "enabled": true,
@@ -79,8 +104,13 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "bits.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "hype_train": {
       "enabled": true,
@@ -92,8 +122,13 @@
       "viewerName": null,
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "raid.mp3", "volume": 0.8 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "first_word": {
       "enabled": true,
@@ -105,11 +140,16 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "follow.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     },
     "dice": {
-      "enabled": true,
+      "enabled": false,
       "variant": "minor",
       "icon": "🎲",
       "sealColor": "#1abc9c",
@@ -118,7 +158,7 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "dice.mp3", "volume": 0.7 },
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
       "media": { "enabled": false, "file": null, "type": null }
     },
     "channel_point_redemption": {
@@ -131,8 +171,13 @@
       "viewerName": "{viewer}",
       "ribbon": null,
       "parchmentDuration": 9500,
-      "sound": { "enabled": true, "file": "bits.mp3", "volume": 0.7 },
-      "media": { "enabled": false, "file": null, "type": null }
+      "sound": { "enabled": true, "file": "trumpet-fanfare.mp3", "volume": 0.8 },
+      "media": { "enabled": false, "file": null, "type": null },
+      "trumpet": {
+        "rows": { "bottom": true, "middle": true, "top": true },
+        "size": 400, "angle": 15,
+        "pairStagger": 1.5, "slideDuration": 1.4, "bannerDelay": 0.9, "bannerStayDuration": 11
+      }
     }
   }
 }

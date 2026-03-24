@@ -124,3 +124,59 @@ export function playDiceRollSound(faces: number, volume = 0.7): HTMLAudioElement
   });
   return audio;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SONS DE CHALLENGE (channel points)
+// ═══════════════════════════════════════════════════════════════
+
+/** Chemins des sons de challenge */
+const CHALLENGE_SOUNDS = {
+  /** Cor de guerre — quand la banniere descend */
+  horn: "/media/alerts/sounds/horn.mp3",
+  /** Battement de coeur — pendant le tumble du de */
+  heartbeat: "/media/alerts/sounds/heart-beat.mp3",
+  /** Rire thriller — quand le resultat est revele */
+  reveal: "/media/alerts/sounds/thriller-end-laugh.mp3",
+} as const;
+
+export type ChallengeSoundKey = keyof typeof CHALLENGE_SOUNDS;
+
+/**
+ * Joue un son de challenge.
+ * @param key - "horn" | "heartbeat" | "reveal"
+ * @param volume - volume (0-1), defaut 0.8
+ * @param loop - si true, le son boucle (utile pour le heartbeat)
+ */
+export function playChallengeSound(
+  key: ChallengeSoundKey,
+  volume = 0.8,
+  loop = false,
+): HTMLAudioElement {
+  const audio = new Audio(CHALLENGE_SOUNDS[key]);
+  audio.volume = volume;
+  audio.loop = loop;
+  audio.play().catch((err) => {
+    console.warn(`[ChallengeSound] Impossible de jouer ${key}:`, err);
+  });
+  return audio;
+}
+
+/**
+ * Arrete proprement un son (fade-out rapide pour eviter le "click").
+ */
+export function stopChallengeSound(audio: HTMLAudioElement, fadeMs = 300): void {
+  const steps = 10;
+  const stepMs = fadeMs / steps;
+  const volumeStep = audio.volume / steps;
+  let remaining = steps;
+
+  const interval = setInterval(() => {
+    remaining--;
+    audio.volume = Math.max(0, volumeStep * remaining);
+    if (remaining <= 0) {
+      clearInterval(interval);
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, stepMs);
+}

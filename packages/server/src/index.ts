@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import multer from "multer";
 import { initWebSocket, broadcast, getClientCount } from "./ws/broadcaster";
 import { initAlerts, getAlertsConfig, updateAlertConfig, updateGlobalConfig } from "./services/alerts.service";
-import { connectToStreamerBot, getCurrentStreamId, setCurrentStreamId, getBroadcasterId, setBroadcasterId, onBroadcasterIdChange } from "./services/streamerbot.service";
+import { connectToStreamerBot, getCurrentStreamId, setCurrentStreamId, getBroadcasterId, setBroadcasterId, onBroadcasterIdChange, sendChatMessage } from "./services/streamerbot.service";
 import { buildCredits } from "./services/credits.service";
 import { initGoals, getGoalsState, updateGoalsConfig, broadcastAllGoals } from "./services/goals.service";
 import { initStreamState, getViewerCount } from "./services/stream.service";
@@ -18,6 +18,8 @@ import { resetStamps } from "./services/badge.service";
 import { rollDice, getAvailableDice, getDiceHistory } from "./services/dice.service";
 import { addChallenge, incrementChallenge, startTimer, stopTimer, completeTimer, getActiveChallenges, getAllChallenges, removeChallenge, startTimerTick, getChallengeCredits } from "./services/challenge.service";
 import { loadDiceSettings, getDiceSettings, saveDiceSettings, enqueueDiceRoll } from "./services/dice-queue.service";
+import { loadChallengePointsConfig } from "./services/challenge-points.service";
+import { loadChallengeAnimationSettings, getChallengeAnimationSettings, saveChallengeAnimationSettings } from "./services/challenge-animation.service";
 import type { IncomingEvent, ClipsSyncPayload, ChallengeType } from "@castellan/shared";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -673,6 +675,23 @@ app.post("/api/chat/clear", (_req, res) => {
 });
 
 // ===========================
+// CHAT SEND — L'Intendant parle dans le chat via StreamerBot Bot Account
+// ===========================
+app.post("/api/chat/send", async (req, res) => {
+  const { message } = req.body;
+  if (!message || typeof message !== "string") {
+    res.status(400).json({ ok: false, error: "message requis (string)" });
+    return;
+  }
+  const ok = await sendChatMessage(message.trim());
+  if (ok) {
+    res.json({ ok: true, message: message.trim() });
+  } else {
+    res.status(502).json({ ok: false, error: "Échec envoi — vérifier la connexion StreamerBot et l'action 'Castellan - Chat Send'" });
+  }
+});
+
+// ===========================
 // ROUTES HTTP MANUELLES (pour tests + fallback)
 // On les garde pour pouvoir tester avec PowerShell
 // sans avoir besoin de StreamerBot
@@ -1042,6 +1061,35 @@ app.put("/api/settings/dice", (req, res) => {
 });
 
 // ===========================
+// CHALLENGE ANIMATION SETTINGS (admin configurable)
+// ===========================
+
+app.get("/api/settings/challenge-animation", (_req, res) => {
+  res.json({ ok: true, settings: getChallengeAnimationSettings() });
+});
+
+app.put("/api/settings/challenge-animation", (req, res) => {
+  const {
+    bannerDelay, bannerDuration,
+    viewerAppearDelay, viewerAppearDuration,
+    diceAppearDelay, diceRollDelay,
+    displayDuration, exitDuration,
+  } = req.body;
+  const updated = saveChallengeAnimationSettings({
+    ...(bannerDelay != null ? { bannerDelay: Number(bannerDelay) } : {}),
+    ...(bannerDuration != null ? { bannerDuration: Number(bannerDuration) } : {}),
+    ...(viewerAppearDelay != null ? { viewerAppearDelay: Number(viewerAppearDelay) } : {}),
+    ...(viewerAppearDuration != null ? { viewerAppearDuration: Number(viewerAppearDuration) } : {}),
+    ...(diceAppearDelay != null ? { diceAppearDelay: Number(diceAppearDelay) } : {}),
+    ...(diceRollDelay != null ? { diceRollDelay: Number(diceRollDelay) } : {}),
+    ...(displayDuration != null ? { displayDuration: Number(displayDuration) } : {}),
+    ...(exitDuration != null ? { exitDuration: Number(exitDuration) } : {}),
+  });
+  broadcast({ type: "settings:challenge-animation", payload: updated } as any);
+  res.json({ ok: true, settings: updated });
+});
+
+// ===========================
 // DICE TEST ROLL (admin simulation via queue)
 // ===========================
 
@@ -1115,10 +1163,47 @@ app.post("/api/challenges/test-roll", (req, res) => {
 });
 
 // ===========================
+// TEST — Animation de défi channel points
+// ===========================
+app.post("/api/challenges/test-challenge-roll", async (req, res) => {
+  try {
+    const { challengeKey, viewerName } = req.body as { challengeKey?: string; viewerName?: string };
+    const { findChallengeByReward, getAllChallengePointConfigs, rollChallengePointDice } = await import("./services/challenge-points.service");
+
+    // Si pas de clé, lister les défis disponibles
+    if (!challengeKey) {
+      const configs = getAllChallengePointConfigs();
+      res.json({ ok: true, available: configs.map(c => ({ key: c.name, label: c.label, faces: c.faces, type: c.type })) });
+      return;
+    }
+
+    // Chercher la config par nom
+    const configs = getAllChallengePointConfigs();
+    const config = configs.find(c => c.name === challengeKey);
+    if (!config) {
+      res.status(400).json({ ok: false, error: `Défi "${challengeKey}" introuvable` });
+      return;
+    }
+
+    const result = await rollChallengePointDice(
+      config,
+      { displayName: viewerName ?? "TestViewer" },
+    );
+
+    res.json({ ok: true, challenge: config.label, roll: result.result, amount: result.amount, faces: config.faces });
+  } catch (err) {
+    console.error("[Challenge] Erreur test-challenge-roll:", err);
+    res.status(500).json({ ok: false, error: "Erreur interne" });
+  }
+});
+
+// ===========================
 // DÉMARRAGE
 // ===========================
 async function start() {
   loadDiceSettings();
+  loadChallengePointsConfig();
+  loadChallengeAnimationSettings();
   initGoals();
   initAlerts();
   initStreamState();

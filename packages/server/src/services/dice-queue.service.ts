@@ -16,6 +16,7 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { broadcast } from "../ws/broadcaster";
 import { addChallenge } from "./challenge.service";
+import { sendChatMessage } from "./streamerbot.service";
 import type { ChallengeType } from "@castellan/shared";
 
 // ═══════════════════════════════════════════════════════════════
@@ -108,6 +109,77 @@ interface QueuedDiceRoll {
     amount: number;
     icon?: string;
   };
+  // Des restants apres ce roll (pour le message chat)
+  remaining?: { d6: number; d12: number; d20: number };
+  // Si true, ne PAS broadcast dice:rolled (l'animation est geree ailleurs, ex: ChallengeRollOverlay)
+  skipDiceBroadcast?: boolean;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT — Messages de L'Intendant pour les lancers de dés
+// ═══════════════════════════════════════════════════════════════
+
+/** Construit le suffixe "il te reste X dY" pour le message chat */
+function buildRemainingText(
+  faces: number,
+  remaining?: { d6: number; d12: number; d20: number }
+): string {
+  if (!remaining) return "";
+
+  // Pour un d6, indiquer les d6 restants
+  if (faces === 6) {
+    return remaining.d6 > 0
+      ? ` | Il te reste ${remaining.d6} d6`
+      : " | Plus de d6 !";
+  }
+  // Pour un d12, indiquer les d12 restants
+  if (faces === 12) {
+    return remaining.d12 > 0
+      ? ` | Il te reste ${remaining.d12} d12`
+      : " | Plus de d12 !";
+  }
+  // Pour un d20, indiquer le total restant (tous tiers confondus)
+  if (faces === 20) {
+    return remaining.d20 > 0
+      ? ` | Il te reste ${remaining.d20} d20`
+      : " | Plus de d20 !";
+  }
+  return "";
+}
+
+/** Construit le message chat pour un resultat de de */
+function buildDiceRollChatMessage(
+  bp: QueuedDiceRoll["broadcastPayload"],
+  challenge?: QueuedDiceRoll["challenge"],
+  remaining?: { d6: number; d12: number; d20: number }
+): string | null {
+  const viewer = bp.viewer.displayName;
+  const suffix = buildRemainingText(bp.faces, remaining);
+
+  // Nat 20 → roue de gains
+  if (bp.isNat20) {
+    return `🎰 ${viewer} a fait un 20 naturel ! ROUE DE GAINS !${suffix}`;
+  }
+
+  // De de roue sans nat 20
+  if (bp.dieType === "wheel") {
+    return `🎲 ${viewer} lance un d${bp.faces}... ${bp.result}. Pas de roue cette fois !${suffix}`;
+  }
+
+  // Défi timer (ex: voix de Stitch)
+  if (challenge && bp.challengeType === "timer") {
+    const label = bp.challengeLabel ?? "défi";
+    return `🎲 ${viewer} lance un d${bp.faces}... ${bp.result} min de ${label} pour Kavaliero ! 💀${suffix}`;
+  }
+
+  // Défi counter (ex: squatts)
+  if (challenge && bp.challengeType === "counter") {
+    const label = bp.challengeLabel?.toLowerCase() ?? "défis";
+    return `🎲 ${viewer} lance un d${bp.faces}... ${bp.result} ${label} pour Kavaliero ! 💪${suffix}`;
+  }
+
+  // Fallback générique
+  return `🎲 ${viewer} lance un d${bp.faces}... ${bp.result} !${suffix}`;
 }
 
 /** Timestamp a partir duquel le prochain slot est libre */
@@ -140,22 +212,34 @@ export function enqueueDiceRoll(roll: QueuedDiceRoll): { roll: number; scheduled
   );
 
   // Broadcast IMMÉDIAT — le client queue les animations lui-même
-  broadcast({ type: "dice:rolled", payload: roll.broadcastPayload } as any);
+  // (sauf si skipDiceBroadcast, ex: challenge points qui ont leur propre animation)
+  if (!roll.skipDiceBroadcast) {
+    broadcast({ type: "dice:rolled", payload: roll.broadcastPayload } as any);
+  }
 
-  // Programmer le addChallenge au moment du reveal (basé sur la position dans la queue)
-  if (roll.challenge) {
-    const { challenge } = roll;
-    setTimeout(async () => {
+  // Programmer le addChallenge + message chat au moment du reveal
+  const { broadcastPayload: bp } = roll;
+  setTimeout(async () => {
+    // 1. Mettre à jour le défi si applicable
+    if (roll.challenge) {
       try {
-        await addChallenge(challenge);
+        await addChallenge(roll.challenge);
         console.log(
-          `[DiceQueue] Challenge mis à jour après reveal: ${challenge.label} +${challenge.amount}`
+          `[DiceQueue] Challenge mis à jour après reveal: ${roll.challenge.label} +${roll.challenge.amount}`
         );
       } catch (err) {
         console.error("[DiceQueue] Erreur addChallenge après reveal:", err);
       }
-    }, challengeDelay);
-  }
+    }
+
+    // 2. L'Intendant annonce le résultat dans le chat
+    try {
+      const chatMsg = buildDiceRollChatMessage(bp, roll.challenge, roll.remaining);
+      if (chatMsg) await sendChatMessage(chatMsg);
+    } catch (err) {
+      console.error("[DiceQueue] Erreur message chat:", err);
+    }
+  }, challengeDelay);
 
   return { roll: roll.broadcastPayload.result, scheduledAt: startTime };
 }

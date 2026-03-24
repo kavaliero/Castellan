@@ -167,6 +167,9 @@ export interface IncomingEventData {
     type: 'challenge:completed';
     payload: ChallengeCompletedPayload;
 } | {
+    type: 'alert:challenge_roll';
+    payload: AlertChallengeRollPayload;
+} | {
     type: 'credits:data';
     payload: CreditsPayload;
 } | {
@@ -252,6 +255,33 @@ export interface AlertHypeTrainPayload {
     level: number;
     totalPoints: number;
     progress: number;
+}
+
+/**
+ * Payload pour l'animation de défi de channel points.
+ * Contient tout le nécessaire pour l'animation : bannière + photo profil + dé + barre défi.
+ */
+export interface AlertChallengeRollPayload {
+    viewer: { displayName: string };
+    challengeName: string;
+    challengeLabel: string;
+    challengeType: ChallengeType;
+    challengeIcon: string;
+    challengeTitle: string;
+    faces: number;
+    result: number;
+    amount: number;
+    profileImageUrl: string | null;
+    timings?: {
+        bannerDelay: number;
+        bannerDuration: number;
+        viewerAppearDelay: number;
+        viewerAppearDuration: number;
+        diceAppearDelay: number;
+        diceRollDelay: number;
+        displayDuration: number;
+        exitDuration: number;
+    };
 }
 
 export interface AlertFirstWordPayload {
@@ -499,6 +529,30 @@ export interface AlertMediaConfig {
   type: 'video' | 'gif' | null;
 }
 
+/** Config des rangees de trompettes (animation follow trumpet) */
+export interface TrumpetRowsConfig {
+  bottom: boolean;
+  middle: boolean;
+  top: boolean;
+}
+
+/** Config de timing et visuel des trompettes (animation follow trumpet) */
+export interface TrumpetConfig {
+  rows: TrumpetRowsConfig;
+  /** Taille des trompettes (px largeur) */
+  size: number;
+  /** Angle d'inclinaison vers le haut (degres, ex: 15) */
+  angle: number;
+  /** Delai entre chaque rangee (secondes, ex: 0.8) */
+  pairStagger: number;
+  /** Duree du slide-in d'une trompette (secondes, ex: 0.7) */
+  slideDuration: number;
+  /** Delai avant l'apparition de la banderole apres la derniere rangee (secondes, ex: 0.3) */
+  bannerDelay: number;
+  /** Duree d'affichage de la banderole (secondes, ex: 6). Remplace parchmentDuration pour cette anim. */
+  bannerStayDuration: number;
+}
+
 export interface AlertTypeConfig {
   enabled: boolean;
   variant: 'minor' | 'major';
@@ -511,6 +565,8 @@ export interface AlertTypeConfig {
   parchmentDuration: number;
   sound: AlertSoundConfig;
   media: AlertMediaConfig;
+  /** Optionnel — config specifique a l'animation trompettes (follow) */
+  trumpet?: TrumpetConfig;
 }
 
 export interface AlertGlobalConfig {

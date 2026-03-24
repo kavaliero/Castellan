@@ -38,14 +38,28 @@ function toViewerInfo(viewer: { twitchId: string; username: string; displayName:
  *                       (top chatters, lurkers, first message, compteurs...).
  *                       Capturé dynamiquement au stream start.
  */
+// Usernames des bots à exclure des crédits (même liste que streamerbot.service)
+const BOT_USERNAMES = ["intendantbot", "nightbot", "streamelements", "streamlabs", "moobot", "fossabot"];
+
 export async function buildCredits(streamId: string, broadcasterId?: string | null): Promise<CreditsPayload> {
-    // Filtre Prisma réutilisable : exclut le broadcaster si configuré
-    const notBroadcaster = broadcasterId
-        ? { viewer: { twitchId: { not: broadcasterId } } }
+    // Filtre Prisma réutilisable : exclut le broadcaster + bots des crédits
+    const excludedIds: string[] = [];
+    if (broadcasterId) excludedIds.push(broadcasterId);
+
+    const notExcluded = excludedIds.length > 0 || BOT_USERNAMES.length > 0
+        ? {
+            viewer: {
+                ...(excludedIds.length > 0 ? { twitchId: { notIn: excludedIds } } : {}),
+                username: { notIn: BOT_USERNAMES },
+            },
+        }
         : {};
 
+    // Remplacement de notBroadcaster par notExcluded dans toutes les requêtes
+    const notBroadcaster = notExcluded;
+
     if (broadcasterId) {
-        console.log(`[Credits] 🎙️ Exclusion du broadcaster (${broadcasterId}) des stats`);
+        console.log(`[Credits] 🎙️ Exclusion du broadcaster (${broadcasterId}) + ${BOT_USERNAMES.length} bots des crédits`);
     }
 
     // 1. Infos du stream

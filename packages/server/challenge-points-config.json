@@ -1,0 +1,81 @@
+{
+  "challenges": {
+    "squatts": {
+      "rewardName": "Defis : Squats",
+      "aliases": ["squatts", "squats", "10 squats"],
+      "name": "squatts",
+      "label": "Squatts",
+      "type": "counter",
+      "faces": 12,
+      "icon": "💪",
+      "title": "Combien de squatts ?",
+      "cost": 1000
+    },
+    "voix-stitch": {
+      "rewardName": "Defis : Change de Voix en mode Stitch",
+      "aliases": ["voix de stitch", "stitch", "voix stitch"],
+      "name": "voix-stitch",
+      "label": "Voix de Stitch",
+      "type": "timer",
+      "faces": 4,
+      "icon": "🎤",
+      "title": "Voix de Stitch pendant combien de temps ?",
+      "cost": 750
+    },
+    "gant-cuisine": {
+      "rewardName": "Defis : Gant de cuisine",
+      "aliases": ["gant de cuisine", "gant cuisine", "gants de cuisine"],
+      "name": "gant-cuisine",
+      "label": "Gant de cuisine",
+      "type": "timer",
+      "faces": 4,
+      "icon": "🧤",
+      "title": "Gant de cuisine pendant combien de temps ?",
+      "cost": 750
+    },
+    "clavier-inverse": {
+      "rewardName": "Defis : Retourne ton clavier",
+      "aliases": ["clavier à l'envers", "clavier inverse", "retourne ton clavier", "clavier inversé"],
+      "name": "clavier-inverse",
+      "label": "Clavier à l'envers",
+      "type": "timer",
+      "faces": 4,
+      "icon": "⌨️",
+      "title": "Clavier à l'envers pendant combien de temps ?",
+      "cost": 1000
+    },
+    "main-inverse": {
+      "rewardName": "Defis : Main inversée",
+      "aliases": ["main à l'envers", "main inversée", "main inverse"],
+      "name": "main-inverse",
+      "label": "Main à l'envers",
+      "type": "timer",
+      "faces": 4,
+      "icon": "🤚",
+      "title": "Main à l'envers pendant combien de temps ?",
+      "cost": 1000
+    },
+    "mode-aveugle": {
+      "rewardName": "Defis : Mode aveugle",
+      "aliases": ["mode aveugle", "aveugle", "yeux fermés"],
+      "name": "mode-aveugle",
+      "label": "Mode aveugle",
+      "type": "timer",
+      "faces": 4,
+      "icon": "🙈",
+      "title": "Mode aveugle pendant combien de temps ?",
+      "cost": 1000
+    },
+    "glacon-bouche": {
+      "rewardName": "Defis : Glaçon dans la bouche",
+      "aliases": ["glaçon dans la bouche", "glaçon", "glacons", "glacon"],
+      "name": "glacon-bouche",
+      "label": "Glaçon dans la bouche",
+      "type": "timer",
+      "faces": 4,
+      "icon": "🧊",
+      "title": "Glaçon dans la bouche pendant combien de temps ?",
+      "cost": 1000
+    }
+  }
+}
